@@ -25,14 +25,6 @@ var (
 	trustEmail                = false
 )
 
-func ptr(value string) *string {
-	return &value
-}
-
-func ptrBool(value bool) *bool {
-	return &value
-}
-
 func createTestIdpConfig() map[string]string {
 	return map[string]string{
 		"postBindingLogout":              "true",
@@ -69,7 +61,7 @@ func createTestIdpConfig() map[string]string {
 
 func createValideHrdSettings() HrdSettingModel {
 	return HrdSettingModel{
-		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
+		IPRangesList: new("192.168.0.1/24,127.0.0.1/8"),
 		Priority:     0,
 	}
 }
@@ -100,21 +92,21 @@ func createTestAPIIdp() IdentityProviderRepresentation {
 func createValidIdpMapper() IdentityProviderMapperRepresentation {
 	return IdentityProviderMapperRepresentation{
 		Config:                 map[string]string{"key1": "value1", "key2": "value2"},
-		ID:                     ptr("88888888-4444-4444-4444-121212121212"),
-		IdentityProviderAlias:  ptr("alias"),
-		IdentityProviderMapper: ptr("mapper"),
-		Name:                   ptr("name"),
+		ID:                     new("88888888-4444-4444-4444-121212121212"),
+		IdentityProviderAlias:  new("alias"),
+		IdentityProviderMapper: new("mapper"),
+		Name:                   new("name"),
 	}
 }
 
 func createValidUserRepresentation() UserRepresentation {
 	return UserRepresentation{
-		ID:         ptr("user-id"),
-		Username:   ptr("username"),
-		FirstName:  ptr("first name"),
-		LastName:   ptr("last name"),
-		Email:      ptr("em@il.ch"),
-		Enabled:    ptrBool(true),
+		ID:         new("user-id"),
+		Username:   new("username"),
+		FirstName:  new("first name"),
+		LastName:   new("last name"),
+		Email:      new("em@il.ch"),
+		Enabled:    new(true),
 		RealmRoles: []string{"role1", "role2"},
 		Attributes: map[string][]string{"key": []string{"value1", "value2"}},
 	}
@@ -146,8 +138,8 @@ func TestHRDSettingValidate(t *testing.T) {
 	for range 4 {
 		items = append(items, createValideHrdSettings())
 	}
-	items[0].IPRangesList = ptr("")
-	items[1].IPRangesList = ptr("`!not a valid ipRangesList!`")
+	items[0].IPRangesList = new("")
+	items[1].IPRangesList = new("`!not a valid ipRangesList!`")
 	items[2].Priority = -10571
 	items[3].Priority = 27903
 
@@ -185,7 +177,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	t.Run("valid domains list", func(t *testing.T) {
 		idp := createTestAPIIdp()
 
-		idp.HrdSettings.DomainsList = ptr("example.com,example.org")
+		idp.HrdSettings.DomainsList = new("example.com,example.org")
 
 		err := idp.Validate()
 		assert.NoError(t, err)
@@ -224,7 +216,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	t.Run("invalid HRD IP ranges list", func(t *testing.T) {
 		idp := createTestAPIIdp()
 
-		idp.HrdSettings.IPRangesList = ptr("not a list of IP ranges")
+		idp.HrdSettings.IPRangesList = new("not a list of IP ranges")
 
 		err := idp.Validate()
 		assert.Error(t, err)
@@ -233,7 +225,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	t.Run("invalid HRD domains list", func(t *testing.T) {
 		idp := createTestAPIIdp()
 
-		idp.HrdSettings.DomainsList = ptr("not a list of domains")
+		idp.HrdSettings.DomainsList = new("not a list of domains")
 
 		err := idp.Validate()
 		assert.Error(t, err)
@@ -279,14 +271,14 @@ func TestIdentityProviderMapperValidate(t *testing.T) {
 	for range 8 {
 		items = append(items, createValidIdpMapper())
 	}
-	items[0].ID = ptr("")
-	items[1].ID = ptr("idp-mapper")
+	items[0].ID = new("")
+	items[1].ID = new("idp-mapper")
 	items[2].IdentityProviderAlias = nil
-	items[3].IdentityProviderAlias = ptr("")
+	items[3].IdentityProviderAlias = new("")
 	items[4].IdentityProviderMapper = nil
-	items[5].IdentityProviderMapper = ptr("")
+	items[5].IdentityProviderMapper = new("")
 	items[6].Name = nil
-	items[7].Name = ptr("")
+	items[7].Name = new("")
 
 	for idx, item := range items {
 		t.Run(fmt.Sprintf("IdentityProviderRepresentation case idx: %d", idx), func(t *testing.T) {

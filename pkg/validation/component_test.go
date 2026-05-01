@@ -145,7 +145,7 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Run("Fails to retrieve token for technical user", func(t *testing.T) {
 		var user = api.UserRepresentation{
-			FirstName: ptr("newFirstname"),
+			FirstName: new("newFirstname"),
 		}
 		var kcError = errors.New("kc error")
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), targetRealm).Return("", kcError)
@@ -162,7 +162,7 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Run("Fails to get user from KC", func(t *testing.T) {
 		var user = api.UserRepresentation{
-			FirstName: ptr("newFirstname"),
+			FirstName: new("newFirstname"),
 		}
 		var kcError = errors.New("kc error")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, kcError)
@@ -232,7 +232,7 @@ func TestUpdateUser(t *testing.T) {
 	})
 	t.Run("Fails to update user in KC with other error than ClientDetailedError", func(t *testing.T) {
 		var user = api.UserRepresentation{
-			FirstName: ptr("newFirstname"),
+			FirstName: new("newFirstname"),
 		}
 		var kcError = errors.New("kc error")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
@@ -251,8 +251,8 @@ func TestUpdateUser(t *testing.T) {
 		mocks.accredsService.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return([]string{}, errors.New("error"))
 
 		var user = api.UserRepresentation{
-			FirstName:      ptr("newFirstname"),
-			IDDocumentType: ptr("type"),
+			FirstName:      new("newFirstname"),
+			IDDocumentType: new("type"),
 		}
 		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
 		assert.NotNil(t, err)
@@ -264,8 +264,8 @@ func TestUpdateUser(t *testing.T) {
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 
 		var user = api.UserRepresentation{
-			FirstName:      ptr("newFirstname"),
-			IDDocumentType: ptr("type"),
+			FirstName:      new("newFirstname"),
+			IDDocumentType: new("type"),
 		}
 		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
 		assert.Nil(t, err)
@@ -283,8 +283,8 @@ func TestUpdateUser(t *testing.T) {
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 
 		var user = api.UserRepresentation{
-			FirstName:      ptr("newFirstname"),
-			IDDocumentType: ptr("type"),
+			FirstName:      new("newFirstname"),
+			IDDocumentType: new("type"),
 		}
 		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
 		assert.Nil(t, err)
@@ -295,8 +295,8 @@ func TestUpdateUser(t *testing.T) {
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		var user = api.UserRepresentation{
-			FirstName:      ptr("newFirstname"),
-			IDDocumentType: ptr("type"),
+			FirstName:      new("newFirstname"),
+			IDDocumentType: new("type"),
 		}
 		var err = component.UpdateUser(ctx, targetRealm, userID, user, nil)
 		assert.Nil(t, err)
@@ -318,8 +318,8 @@ func TestUpdateUserAccreditations(t *testing.T) {
 	username := "pseudo129"
 	userAccreds := []api.AccreditationRepresentation{
 		{
-			Name:     ptr("ONE"),
-			Validity: ptr("4y"),
+			Name:     new("ONE"),
+			Validity: new("4y"),
 		},
 	}
 	user := kc.UserRepresentation{Username: &username}
@@ -492,12 +492,12 @@ func TestGetRolesOfUser(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		roles := []kc.RoleRepresentation{
 			{
-				ID:   ptr("role-id-1"),
-				Name: ptr("role-name-1"),
+				ID:   new("role-id-1"),
+				Name: new("role-name-1"),
 			},
 			{
-				ID:   ptr("role-id-2"),
-				Name: ptr("role-name-2"),
+				ID:   new("role-id-2"),
+				Name: new("role-name-2"),
 			}}
 
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
@@ -505,12 +505,12 @@ func TestGetRolesOfUser(t *testing.T) {
 
 		expectedResult := []api.RoleRepresentation{
 			{
-				ID:   ptr("role-id-1"),
-				Name: ptr("role-name-1"),
+				ID:   new("role-id-1"),
+				Name: new("role-name-1"),
 			},
 			{
-				ID:   ptr("role-id-2"),
-				Name: ptr("role-name-2"),
+				ID:   new("role-id-2"),
+				Name: new("role-name-2"),
 			}}
 
 		result, err := component.GetRolesOfUser(ctx, realmName, userID)

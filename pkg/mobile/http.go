@@ -20,7 +20,7 @@ func MakeMobileHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.S
 }
 
 // decodeEventsRequest gets the HTTP parameters and body content
-func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, error) {
+func decodeAccountRequest(ctx context.Context, req *http.Request) (any, error) {
 	var pathParams = map[string]string{
 		// No path parameters
 	}

@@ -48,10 +48,6 @@ func (m *componentMock) createComponent() *component {
 		m.configurationDBModule, m.accreditationsClient, "DEP", 30, log.NewNopLogger()).(*component)
 }
 
-func ptr(value string) *string {
-	return &value
-}
-
 func getContextKeys(contextKeyID string, accreditationRequested string) []configuration.RealmContextKey {
 	return []configuration.RealmContextKey{
 		{
@@ -121,7 +117,7 @@ func TestUpdatePassword(t *testing.T) {
 
 	t.Run("Set password: user has a current password", func(t *testing.T) {
 		cred := kc.CredentialRepresentation{
-			Type: ptr("password"),
+			Type: new("password"),
 		}
 		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{cred}, nil)
 
@@ -685,8 +681,8 @@ func TestGetUser(t *testing.T) {
 	t.Run("Get user with succces", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]accreditationsclient.CheckRepresentation{{
-			Nature:   ptr("nature"),
-			Status:   ptr("PENDING"),
+			Nature:   new("nature"),
+			Status:   new("PENDING"),
 			DateTime: &now,
 		}}, nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
@@ -893,9 +889,9 @@ func TestDeleteCredential(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 	var anyError = errors.New("any error")
 
-	var passwordCred = kc.CredentialRepresentation{ID: ptr("cred-11111"), Type: ptr("password")}
-	var removingMFA = kc.CredentialRepresentation{ID: &credentialID, Type: ptr("mfa")}
-	var anotherMFA = kc.CredentialRepresentation{ID: ptr("cred-22222"), Type: ptr("mfa")}
+	var passwordCred = kc.CredentialRepresentation{ID: new("cred-11111"), Type: new("password")}
+	var removingMFA = kc.CredentialRepresentation{ID: &credentialID, Type: new("mfa")}
+	var anotherMFA = kc.CredentialRepresentation{ID: new("cred-22222"), Type: new("mfa")}
 
 	t.Run("CheckRemovableMFA fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return(nil, anyError)
@@ -1002,16 +998,16 @@ func TestGetConfiguration(t *testing.T) {
 		ShowPasswordTab:                         &trueBool,
 		ShowProfileTab:                          &trueBool,
 		ShowIDPLinksTab:                         &trueBool,
-		SelfServiceDefaultTab:                   ptr("default-tab"),
-		RedirectSuccessfulRegistrationURL:       ptr("successful-url"),
-		BarcodeType:                             ptr("barcode"),
+		SelfServiceDefaultTab:                   new("default-tab"),
+		RedirectSuccessfulRegistrationURL:       new("successful-url"),
+		BarcodeType:                             new("barcode"),
 		OnboardingUserEditingEnabled:            &falseBool,
 		APISelfInitialPasswordDefinitionAllowed: &falseBool,
 		IdentificationURL:                       &identificationUrl,
 	}
 	var adminConfig = configuration.RealmAdminConfiguration{
 		AvailableChecks:                          map[string]bool{"IDNow": false, "physical-check": true},
-		SseTheme:                                 ptr("my-theme"),
+		SseTheme:                                 new("my-theme"),
 		VideoIdentificationVoucherEnabled:        &falseBool,
 		VideoIdentificationAccountingEnabled:     &falseBool,
 		VideoIdentificationPrepaymentRequired:    &falseBool,

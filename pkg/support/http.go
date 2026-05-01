@@ -26,7 +26,7 @@ func MakeSupportHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 }
 
 // decodeSupportRequest gets the HTTP parameters and body content
-func decodeSupportRequest(ctx context.Context, req *http.Request) (interface{}, error) {
+func decodeSupportRequest(ctx context.Context, req *http.Request) (any, error) {
 	var pathParams = map[string]string{}
 	var queryParams = map[string]string{prmQryEmail: constants.RegExpEmail}
 

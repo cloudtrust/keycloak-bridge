@@ -9,7 +9,3 @@ package management
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/kctoolbox.go -package=mock -mock_names=OidcTokenProvider=OidcTokenProvider github.com/cloudtrust/keycloak-client/v2/toolbox OidcTokenProvider
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/accreditation.go -package=mock -mock_names=AccreditationsServiceClient=AccreditationsServiceClient github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient AccreditationsServiceClient
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/kafka.go -package=mock -mock_names=Producer=Producer github.com/cloudtrust/kafka-client Producer
-
-func ptr(value string) *string {
-	return &value
-}

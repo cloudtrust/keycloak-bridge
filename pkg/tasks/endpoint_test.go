@@ -7,8 +7,8 @@ import (
 
 	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/cloudtrust/keycloak-bridge/pkg/tasks/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(t *testing.T) {
@@ -19,7 +19,7 @@ func TestMakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(t *testing.T) {
 	var endpoint = MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(mockTasksComponent)
 
 	var ctx = context.TODO()
-	var request interface{}
+	var request any
 
 	t.Run("Error", func(t *testing.T) {
 		var anyError = errors.New("any error")

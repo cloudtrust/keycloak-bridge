@@ -402,9 +402,9 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 		RealmName: &targetRealm,
 		Operator:  &operatorName,
 		DateTime:  &now,
-		Status:    ptr("VERIFIED"),
-		Type:      ptr("IDENTITY_CHECK"),
-		Nature:    ptr("BASIC_CHECK"),
+		Status:    new("VERIFIED"),
+		Type:      new("IDENTITY_CHECK"),
+		Nature:    new("BASIC_CHECK"),
 		Comment:   user.Comment,
 		ProofType: nil,
 		ProofData: nil,
@@ -420,7 +420,7 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 			c.logger.Warn(ctx, "msg", "Zip creation failed", "err", err.Error())
 			return err
 		}
-		check.ProofType = ptr("application/zip")
+		check.ProofType = new("application/zip")
 		check.ProofData = &zipAttachments
 	}
 
@@ -502,8 +502,8 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		RealmName: &targetRealm,
 		Operator:  &operatorName,
 		DateTime:  &now,
-		Status:    ptr("VERIFIED"),
-		Type:      ptr("IDENTITY_CHECK"),
+		Status:    new("VERIFIED"),
+		Type:      new("IDENTITY_CHECK"),
 		Comment:   user.Comment,
 		ProofType: nil,
 		ProofData: nil,
@@ -511,9 +511,9 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	}
 
 	if isAuxiliary {
-		check.Nature = ptr("AUXILIARY_PHYSICAL_CHECK")
+		check.Nature = new("AUXILIARY_PHYSICAL_CHECK")
 	} else {
-		check.Nature = ptr("PHYSICAL_CHECK")
+		check.Nature = new("PHYSICAL_CHECK")
 	}
 
 	if user.Attachments != nil && len(*user.Attachments) == 1 {
@@ -525,7 +525,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 			c.logger.Warn(ctx, "msg", "Zip creation failed", "err", err.Error())
 			return err
 		}
-		check.ProofType = ptr("application/zip")
+		check.ProofType = new("application/zip")
 		check.ProofData = &zipAttachments
 	}
 
@@ -607,10 +607,6 @@ func (c *component) getUserByUsername(accessToken, reqRealmName, targetRealmName
 	var res = kcUsers.Users[0]
 	keycloakb.ConvertLegacyAttribute(&res)
 	return res, nil
-}
-
-func ptr(value string) *string {
-	return &value
 }
 
 func (c *component) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {

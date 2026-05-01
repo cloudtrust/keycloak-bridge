@@ -77,7 +77,7 @@ type UpdatableAccountRepresentation struct {
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
 	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
-	BusinessID           csjson.OptionalString          `json:"businessId,omitempty"`
+	BusinessID           csjson.OptionalString          `json:"businessId"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	Dynamic              map[string]any                 `json:"-"`
 }
@@ -298,7 +298,7 @@ func MergeUserWithoutEmailAndPhoneNumber(userRep *kc.UserRepresentation, user Up
 // Validators
 
 // GetField is used to validate a user against a UserProfile
-func (user *UpdatableAccountRepresentation) GetField(field string) interface{} {
+func (user *UpdatableAccountRepresentation) GetField(field string) any {
 	switch field {
 	case fields.Username.Key():
 		return profile.IfNotNil(user.Username)
@@ -339,7 +339,7 @@ func (user *UpdatableAccountRepresentation) GetField(field string) interface{} {
 }
 
 // SetField is used to validate a user against a UserProfile
-func (user *UpdatableAccountRepresentation) SetField(field string, value interface{}) {
+func (user *UpdatableAccountRepresentation) SetField(field string, value any) {
 	switch field {
 	case fields.Username.Key():
 		user.Username = cs.ToStringPtr(value)

@@ -122,8 +122,8 @@ func TestRegisterUser(t *testing.T) {
 		OnboardingRedirectURI:  &onboardingURI,
 	}
 	var realmAdminConf = configuration.RealmAdminConfiguration{
-		OnboardingStatusEnabled: ptrBool(true),
-		SelfRegisterEnabled:     ptrBool(true),
+		OnboardingStatusEnabled: new(true),
+		SelfRegisterEnabled:     new(true),
 	}
 	var anyError = errors.New("any error")
 
@@ -133,13 +133,13 @@ func TestRegisterUser(t *testing.T) {
 	var contextKeyRedirect = "key1"
 	var contextKeyInvalid = "invalid"
 	mocks.contextKeyMgr.EXPECT().GetOverride(ctx, contextKeyNeutral, customerRealmName).Return(keycloakb.ContextKeyParameters{
-		ID:            ptr(contextKeyRedirect),
+		ID:            new(contextKeyRedirect),
 		CustomerRealm: &customerRealmName,
 	}, nil).AnyTimes()
 	mocks.contextKeyMgr.EXPECT().GetOverride(ctx, contextKeyRedirect, customerRealmName).Return(keycloakb.ContextKeyParameters{
-		ID:             ptr(contextKeyRedirect),
+		ID:             new(contextKeyRedirect),
 		CustomerRealm:  &customerRealmName,
-		IsRedirectMode: ptrBool(true),
+		IsRedirectMode: new(true),
 	}, nil).AnyTimes()
 	mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
@@ -414,7 +414,7 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), confRealm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
-		mocks.contextKeyMgr.EXPECT().GetDefaultContextKeyByCustomerRealm(ctx, confRealm).Return(keycloakb.ContextKeyParameters{ID: ptr(key)}, nil)
+		mocks.contextKeyMgr.EXPECT().GetDefaultContextKeyByCustomerRealm(ctx, confRealm).Return(keycloakb.ContextKeyParameters{ID: new(key)}, nil)
 		var conf, err = component.GetConfiguration(ctx, confRealm)
 		assert.Nil(t, err)
 		assert.NotNil(t, conf.ContextKey)

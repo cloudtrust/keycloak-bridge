@@ -32,7 +32,7 @@ type psyRegPerson struct {
 	Locations        []psyRegLocation `json:"plzOrtCollection"`
 	CantonID         *int             `json:"kantonId"`
 	ApprovalStatusID *int             `json:"bewilligungsstatusId"`
-	TooLongName      interface{}      `json:"isMeldungNeunzigTageDienstleisterCurrentYear"`
+	TooLongName      any              `json:"isMeldungNeunzigTageDienstleisterCurrentYear"`
 }
 
 type psyRegLocation struct {

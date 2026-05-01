@@ -1,6 +1,7 @@
 package apicommon
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/cloudtrust/common-service/v2/validation"
@@ -39,7 +40,7 @@ type ProfileAttributeRepresentation struct {
 }
 
 // ProfileAttrbValidatorRepresentation type
-type ProfileAttrbValidatorRepresentation map[string]interface{}
+type ProfileAttrbValidatorRepresentation map[string]any
 
 // ProfileGroupRepresentation struct
 type ProfileGroupRepresentation struct {
@@ -129,9 +130,7 @@ func ToValidator(validator kc.ProfileAttrValidatorRepresentation) ProfileAttrbVa
 		return nil
 	}
 	var res = make(ProfileAttrbValidatorRepresentation)
-	for k, v := range validator {
-		res[k] = v
-	}
+	maps.Copy(res, validator)
 	return res
 }
 

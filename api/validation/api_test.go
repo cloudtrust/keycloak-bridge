@@ -16,14 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ptr(v string) *string {
-	return &v
-}
-
 func createValidAccreditation() AccreditationRepresentation {
 	return AccreditationRepresentation{
-		Name:     ptr("EPR"),
-		Validity: ptr("4y"),
+		Name:     new("EPR"),
+		Validity: new("4y"),
 	}
 }
 
@@ -35,21 +31,21 @@ func createValidUser() UserRepresentation {
 	)
 
 	return UserRepresentation{
-		Username:             ptr("46791834"),
-		Gender:               ptr("M"),
-		FirstName:            ptr("Marc"),
-		LastName:             ptr("El-Bichoun"),
-		Email:                ptr("marcel.bichon@elca.ch"),
+		Username:             new("46791834"),
+		Gender:               new("M"),
+		FirstName:            new("Marc"),
+		LastName:             new("El-Bichoun"),
+		Email:                new("marcel.bichon@elca.ch"),
 		EmailVerified:        &bFalse,
-		PhoneNumber:          ptr("00 33 686 550011"),
+		PhoneNumber:          new("00 33 686 550011"),
 		PhoneNumberVerified:  &bFalse,
 		BirthDate:            &birthDate,
-		BirthLocation:        ptr("Bermuda, CH"),
-		Nationality:          ptr("DE"),
-		IDDocumentType:       ptr("PASSPORT"),
-		IDDocumentNumber:     ptr("123456789"),
+		BirthLocation:        new("Bermuda, CH"),
+		Nationality:          new("DE"),
+		IDDocumentType:       new("PASSPORT"),
+		IDDocumentNumber:     new("123456789"),
 		IDDocumentExpiration: &idDocExpiration,
-		IDDocumentCountry:    ptr("CH"),
+		IDDocumentCountry:    new("CH"),
 	}
 }
 
@@ -65,9 +61,9 @@ func createValidKeycloakUser() kc.UserRepresentation {
 			constants.AttrbPhoneNumberVerified: []string{"true"},
 			constants.AttrbBirthDate:           []string{"29.02.2020"},
 		},
-		FirstName:     ptr("Marc"),
-		LastName:      ptr("El-Bichoun"),
-		Email:         ptr("marcel.bichon@elca.ch"),
+		FirstName:     new("Marc"),
+		LastName:      new("El-Bichoun"),
+		Email:         new("marcel.bichon@elca.ch"),
 		EmailVerified: &bTrue,
 	}
 }
@@ -79,13 +75,13 @@ func TestValidateAccreditation(t *testing.T) {
 	})
 
 	var accreds []AccreditationRepresentation
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		accreds = append(accreds, createValidAccreditation())
 	}
 	accreds[0].Name = nil
-	accreds[1].Name = ptr("")
+	accreds[1].Name = new("")
 	accreds[2].Validity = nil
-	accreds[3].Validity = ptr("not a validity")
+	accreds[3].Validity = new("not a validity")
 
 	for idx, accred := range accreds {
 		t.Run(fmt.Sprintf("Failure test #%d", idx+1), func(t *testing.T) {
@@ -202,7 +198,7 @@ func TestGetSetField(t *testing.T) {
 	assert.Nil(t, user.GetField("not-existing-field"))
 }
 
-func testGetSetField(t *testing.T, fieldName string, value interface{}) {
+func testGetSetField(t *testing.T, fieldName string, value any) {
 	var user UserRepresentation
 	t.Run("Field "+fieldName, func(t *testing.T) {
 		assert.Nil(t, user.GetField(fieldName))
@@ -234,7 +230,7 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("First name update", func(t *testing.T) {
 		var name = "THE NAME"
-		user.FirstName = ptr("OTHER NAME")
+		user.FirstName = new("OTHER NAME")
 		kcUser.FirstName = &name
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())
@@ -245,7 +241,7 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("Last name update", func(t *testing.T) {
 		var name = "THE NAME"
-		user.LastName = ptr("OTHER NAME")
+		user.LastName = new("OTHER NAME")
 		kcUser.LastName = &name
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())
@@ -256,18 +252,18 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("Gender update", func(t *testing.T) {
 		var gender = "M"
-		user.Gender = ptr("F")
+		user.Gender = new("F")
 		kcUser.SetAttributeString(constants.AttrbGender, gender)
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())
 
-		user.Gender = ptr("m")
+		user.Gender = new("m")
 		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Other fields does not matter", func(t *testing.T) {
-		user.Email = ptr("any@mail.me")
-		kcUser.Email = ptr("any.other@mail.me")
+		user.Email = new("any@mail.me")
+		kcUser.Email = new("any.other@mail.me")
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.False(t, fc.IsAnyFieldUpdated())
 	})
@@ -287,7 +283,7 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("Nationality", func(t *testing.T) {
 		var nationality = "TYPE1"
-		user.Nationality = ptr("OTHER-NATIONALITY")
+		user.Nationality = new("OTHER-NATIONALITY")
 		kcUser.SetAttributeString(constants.AttrbNationality, nationality)
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())
@@ -298,7 +294,7 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("Document type update", func(t *testing.T) {
 		var documentType = "TYPE1"
-		user.IDDocumentType = ptr("OTHER-TYPE")
+		user.IDDocumentType = new("OTHER-TYPE")
 		kcUser.SetAttributeString(constants.AttrbIDDocumentType, documentType)
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())
@@ -309,7 +305,7 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("Document number update", func(t *testing.T) {
 		var documentNumber = "1234567890"
-		user.IDDocumentNumber = ptr("OTHER-NUMBER")
+		user.IDDocumentNumber = new("OTHER-NUMBER")
 		kcUser.SetAttributeString(constants.AttrbIDDocumentNumber, documentNumber)
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())
@@ -320,7 +316,7 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("Document country update", func(t *testing.T) {
 		var documentCountry = "DE"
-		user.IDDocumentCountry = ptr("CH")
+		user.IDDocumentCountry = new("CH")
 		kcUser.SetAttributeString(constants.AttrbIDDocumentCountry, documentCountry)
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())
@@ -331,7 +327,7 @@ func TestHasKCChanges(t *testing.T) {
 	})
 	t.Run("Birth location update", func(t *testing.T) {
 		var birthLocation = "Where"
-		user.BirthLocation = ptr("Here !")
+		user.BirthLocation = new("Here !")
 		kcUser.SetAttributeString(constants.AttrbBirthLocation, birthLocation)
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.True(t, fc.IsAnyFieldUpdated())

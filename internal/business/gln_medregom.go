@@ -19,10 +19,10 @@ import (
 
 // MedRegResponse struct
 type MedRegResponse struct {
-	EmptyRowData   interface{}    `json:"emptyrowdata"`
+	EmptyRowData   any            `json:"emptyrowdata"`
 	Rows           []MedRegPerson `json:"rows"`
-	Settings       interface{}    `json:"settings"`
-	AdditionalInfo interface{}    `json:"additionalInfo"`
+	Settings       any            `json:"settings"`
+	AdditionalInfo any            `json:"additionalInfo"`
 }
 
 // MedRegPerson struct

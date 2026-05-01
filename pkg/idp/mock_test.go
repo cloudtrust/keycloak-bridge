@@ -15,14 +15,6 @@ import (
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/kc-auth.go -package=mock -mock_names=KeycloakClient=KcClientAuth,AuthorizationDBReader=AuthorizationDBReader,AuthorizationManager=AuthorizationManager github.com/cloudtrust/common-service/v2/security KeycloakClient,AuthorizationDBReader,AuthorizationManager
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/kc-oidc.go -package=mock -mock_names=OidcTokenProvider=OidcTokenProvider,ComponentTool=ComponentTool github.com/cloudtrust/keycloak-client/v2/toolbox OidcTokenProvider,ComponentTool
 
-func ptr(value string) *string {
-	return &value
-}
-
-func ptrInt(value int) *int {
-	return &value
-}
-
 func toJSON(data any) string {
 	bytes, _ := json.Marshal(data)
 	return string(bytes)

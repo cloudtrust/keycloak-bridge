@@ -30,7 +30,7 @@ func MakeStatisticsHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 }
 
 // decodeEventsRequest gets the HTTP parameters and body content
-func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, error) {
+func decodeEventsRequest(ctx context.Context, req *http.Request) (any, error) {
 	var pathParams = map[string]string{
 		prmRealm: "^[a-zA-Z0-9_-]{1,36}$",
 	}
