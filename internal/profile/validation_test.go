@@ -177,7 +177,6 @@ func TestValidateUser(t *testing.T) {
 	t.Run("Attribute is not required for this frontend type", func(t *testing.T) {
 		assert.Nil(t, ValidateUser(createProfile("", nil, "xxx", false), input, frontend, true))
 	})
-
 	t.Run("No validator, attribute is not required", func(t *testing.T) {
 		assert.Nil(t, ValidateUser(createProfile("", nil, frontend, false), input, frontend, true))
 	})
@@ -194,6 +193,10 @@ func TestValidateUser(t *testing.T) {
 	t.Run("Validation fails", func(t *testing.T) {
 		input.returnValue = new("x")
 		assert.NotNil(t, ValidateUser(createProfile("", nil, frontend, true), input, frontend, false))
+	})
+	t.Run("Empty string accepted for non mandatory field", func(t *testing.T) {
+		input.returnValue = new("")
+		assert.Nil(t, ValidateUser(createProfile("", nil, frontend, false), input, frontend, true))
 	})
 }
 
