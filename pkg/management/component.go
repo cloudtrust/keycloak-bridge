@@ -613,7 +613,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 	var ap, _ = keycloakb.NewAccreditationsProcessor(oldUserKc.GetFieldValues(fields.Accreditations))
 	ap.RevokeTypes(revokeAccreds, func(accred keycloakb.AccreditationRepresentation) {
-		c.reportAccreditationRevokedEvent(ctx, realmName, userID, *user.Username, accred)
+		c.reportAccreditationRevokedEvent(ctx, realmName, userID, *oldUserKc.Username, accred)
 	})
 	newAccreditations := ap.ToKeycloak()
 
