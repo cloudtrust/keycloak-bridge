@@ -1436,6 +1436,24 @@ func (rck *RealmContextKeyRepresentation) ToDatabaseModel(customerRealm string) 
 	}
 }
 
+// ToInternalContextKeyParameters converts a realm context key to the internal ContextKeyParameters struct
+func (rck *RealmContextKeyRepresentation) ToInternalContextKeyParameters() *keycloakb.ContextKeyParameters {
+	if rck == nil {
+		return nil
+	}
+	res := keycloakb.ContextKeyParameters{
+		ID:              rck.ID,
+		IdentitiesRealm: rck.IdentitiesRealm,
+	}
+	if rck.Config != nil {
+		res.IdentificationURI = rck.Config.IdentificationURI
+		res.OnboardingRedirectURI = rck.Config.Onboarding.RedirectURI
+		res.OnboardingClientID = rck.Config.Onboarding.ClientID
+		res.IsRedirectMode = rck.Config.Onboarding.IsRedirectMode
+	}
+	return &res
+}
+
 // Validate is a validator for RealmContextKeyRepresentation
 func (rck *RealmContextKeyRepresentation) Validate() error {
 	return validation.NewParameterValidator().

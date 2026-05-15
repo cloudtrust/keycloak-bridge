@@ -110,7 +110,7 @@ type OnboardingModule interface {
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(userID string, username string, createdTimestamp int64, thirdParty *string) error) error
-	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKeyParams *keycloakb.ContextKeyParameters) (string, error)
 }
 
 // AuthorizationChecker interface
@@ -1282,11 +1282,12 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 		return errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
 	}
 
-	if err := c.validateContextKey(ctx, customerRealm, contextKey); err != nil {
+	realmContextKey, err := c.getContextKey(ctx, customerRealm, contextKey)
+	if err != nil {
 		return err
 	}
 
-	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, realmName, customerRealm, realmConf, contextKey)
+	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, realmName, customerRealm, realmConf, realmContextKey.ToInternalContextKeyParameters())
 	if err != nil {
 		return err
 	}
@@ -1304,22 +1305,22 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 	return nil
 }
 
-func (c *component) validateContextKey(ctx context.Context, customerRealm string, contextKey *string) error {
+func (c *component) getContextKey(ctx context.Context, customerRealm string, contextKey *string) (*api.RealmContextKeyRepresentation, error) {
 	if contextKey != nil {
 		// if a context key is provided, check if it is part of the realm context keys
 		contextKeys, err := c.GetRealmContextKeysConfiguration(ctx, customerRealm)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, validContextKey := range contextKeys {
 			if *contextKey == *validContextKey.ID {
-				return nil
+				return &validContextKey, nil
 			}
 		}
-		return errorhandler.CreateNotFoundError("context-key")
+		return nil, errorhandler.CreateNotFoundError("context-key")
 
 	}
-	return nil
+	return nil, nil
 }
 
 func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID string) error {

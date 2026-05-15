@@ -2824,12 +2824,17 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 	t.Run("Success valid context key", func(t *testing.T) {
 		contextKey := "valid-key"
+		onboardingRedirectURI := "http://context-key.uri"
 		configurationKey := configuration.RealmContextKey{
-			ID:                contextKey,
-			Label:             "label1",
-			IdentitiesRealm:   "master",
-			CustomerRealm:     "master",
-			Config:            configuration.ContextKeyConfiguration{},
+			ID:              contextKey,
+			Label:           "label1",
+			IdentitiesRealm: "master",
+			CustomerRealm:   "master",
+			Config: configuration.ContextKeyConfiguration{
+				Onboarding: &configuration.ContextKeyConfOnboarding{
+					RedirectURI: new(onboardingRedirectURI),
+				},
+			},
 			IsRegisterDefault: false,
 		}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
@@ -2839,7 +2844,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, realmName).Return([]configuration.RealmContextKey{configurationKey}, nil)
 
-		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, realmName, gomock.Any(), &contextKey).Return(onboardingRedirectURI, nil)
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, realmName, gomock.Any(), gomock.Any()).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false, gomock.Any()).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 

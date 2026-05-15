@@ -430,14 +430,22 @@ func TestComputeOnboardingRedirectURI(t *testing.T) {
 	t.Run("Success, with empty contextKey in base conf", func(t *testing.T) {
 		expectedURI := "http://test.test?context=custom-context-key&customerRealm=customer"
 		realmConf.OnboardingRedirectURI = new("http://test.test?customerRealm=customer")
-		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, new("custom-context-key"))
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, &ContextKeyParameters{ID: new("custom-context-key")})
 		assert.Nil(t, err)
 		assert.Equal(t, expectedURI, onboardingRedirectURI)
 	})
 
 	t.Run("Success, with override contextKey", func(t *testing.T) {
 		expectedURI := "http://test.test?context=custom-context-key&customerRealm=customer"
-		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, new("custom-context-key"))
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, &ContextKeyParameters{ID: new("custom-context-key")})
+		assert.Nil(t, err)
+		assert.Equal(t, expectedURI, onboardingRedirectURI)
+	})
+
+	t.Run("Success, with override redirectUri", func(t *testing.T) {
+		redirectURI := "http://override.test"
+		expectedURI := "http://override.test?context=custom-context-key&customerRealm=customer"
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, &ContextKeyParameters{ID: new("custom-context-key"), OnboardingRedirectURI: new(redirectURI)})
 		assert.Nil(t, err)
 		assert.Equal(t, expectedURI, onboardingRedirectURI)
 	})

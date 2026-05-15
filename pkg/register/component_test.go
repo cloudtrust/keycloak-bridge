@@ -18,6 +18,44 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+type contextMatcher struct {
+	ID                    *string
+	OnboardingRedirectURI *string
+}
+
+func (m contextMatcher) Matches(x any) bool {
+	ctxKeyParams, ok := x.(*keycloakb.ContextKeyParameters)
+	if !ok {
+		return false
+	}
+	if m.ID == nil && ctxKeyParams.ID != nil {
+		return false
+	}
+	if m.ID != nil && (ctxKeyParams.ID == nil || *ctxKeyParams.ID != *m.ID) {
+		return false
+	}
+	if m.OnboardingRedirectURI == nil && ctxKeyParams.OnboardingRedirectURI != nil {
+		return false
+	}
+	if m.OnboardingRedirectURI != nil && (ctxKeyParams.OnboardingRedirectURI == nil || *ctxKeyParams.OnboardingRedirectURI != *m.OnboardingRedirectURI) {
+		return false
+	}
+	return true
+}
+
+func (m contextMatcher) String() string {
+	if m.ID == nil && m.OnboardingRedirectURI == nil {
+		return "contextMatcher with nil ID and nil OnboardingRedirectURI"
+	}
+	if m.ID == nil {
+		return "contextMatcher with nil ID and OnboardingRedirectURI=" + *m.OnboardingRedirectURI
+	}
+	if m.OnboardingRedirectURI == nil {
+		return "contextMatcher with ID=" + *m.ID + " and nil OnboardingRedirectURI"
+	}
+	return "contextMatcher with ID=" + *m.ID + " and OnboardingRedirectURI=" + *m.OnboardingRedirectURI
+}
+
 func createValidUser() apiregister.UserRepresentation {
 	var (
 		gender           = "M"
@@ -132,6 +170,8 @@ func TestRegisterUser(t *testing.T) {
 	var contextKeyNeutral = "key0"
 	var contextKeyRedirect = "key1"
 	var contextKeyInvalid = "invalid"
+	var contextKeyNeutralMatcher = contextMatcher{ID: &contextKeyRedirect}
+	var contextKeyRedirectMatcher = contextMatcher{ID: &contextKeyRedirect}
 	mocks.contextKeyMgr.EXPECT().GetOverride(ctx, contextKeyNeutral, customerRealmName).Return(keycloakb.ContextKeyParameters{
 		ID:            new(contextKeyRedirect),
 		CustomerRealm: &customerRealmName,
@@ -184,7 +224,7 @@ func TestRegisterUser(t *testing.T) {
 	mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil).AnyTimes()
 
 	t.Run("Failed to compute OnboardingRedirectURI", func(t *testing.T) {
-		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, nil).Return("", anyError)
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, contextKeyNeutralMatcher).Return("", anyError)
 		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyNeutral)
 		assert.Equal(t, anyError, err)
 	})
@@ -303,7 +343,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
-		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, nil).Return(onboardingRedirectURI, nil)
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, contextKeyRedirectMatcher).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().ComputeRedirectURI(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI).Return(expectedURL, nil)
 

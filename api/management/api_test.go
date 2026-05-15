@@ -1307,6 +1307,16 @@ func TestContextKeyConvertions(t *testing.T) {
 		assert.Nil(t, config.Onboarding.IsRedirectMode)
 		assert.Nil(t, config.IDNow.DesktopRedirectURI)
 	})
+	t.Run("ToInternalContextKeyParameters", func(t *testing.T) {
+		var config = createValidRealmContextKey()
+		var params = config.ToInternalContextKeyParameters()
+		assert.Equal(t, *params.ID, *config.ID)
+		assert.Equal(t, *params.IdentitiesRealm, *config.IdentitiesRealm)
+		assert.Equal(t, *params.IdentificationURI, *config.Config.IdentificationURI)
+		assert.Equal(t, *params.OnboardingClientID, *config.Config.Onboarding.ClientID)
+		assert.Equal(t, *params.OnboardingRedirectURI, *config.Config.Onboarding.RedirectURI)
+		assert.Equal(t, *params.IsRedirectMode, *config.Config.Onboarding.IsRedirectMode)
+	})
 }
 
 func TestValidateRealmContextKeys(t *testing.T) {

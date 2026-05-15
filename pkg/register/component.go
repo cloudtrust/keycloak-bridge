@@ -44,7 +44,7 @@ type OnboardingModule interface {
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(userID string, username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
-	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKeyParams *keycloakb.ContextKeyParameters) (string, error)
 }
 
 // UserProfileCache interface
@@ -181,17 +181,16 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	}
 
 	var redirect = false
-	var ctxOverride keycloakb.ContextKeyParameters
+	var ctxOverride *keycloakb.ContextKeyParameters
 	if contextKey != nil {
-		if ctxOverride, err = c.contextKeyMgr.GetOverride(ctx, *contextKey, customerRealmName); err != nil {
+		if override, err := c.contextKeyMgr.GetOverride(ctx, *contextKey, customerRealmName); err == nil {
+			ctxOverride = &override
+		} else {
 			c.logger.Info(ctx, "msg", "Invalid context key", "context-key", *contextKey, "err", err.Error(), "realm", customerRealmName)
 			return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".context-key")
 		}
 		if ctxOverride.OnboardingClientID != nil {
 			realmConf.OnboardingClientID = ctxOverride.OnboardingClientID
-		}
-		if ctxOverride.OnboardingRedirectURI != nil {
-			realmConf.OnboardingRedirectURI = ctxOverride.OnboardingRedirectURI
 		}
 		if ctxOverride.IsRedirectMode != nil {
 			redirect = *ctxOverride.IsRedirectMode
@@ -202,13 +201,15 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return "", errorhandler.CreateEndpointNotEnabled("selfRegister")
 	}
 
+	hasValidRedirectURI := (ctxOverride != nil && ctxOverride.OnboardingRedirectURI != nil && *ctxOverride.OnboardingRedirectURI != "") ||
+		(realmConf.OnboardingRedirectURI != nil && *realmConf.OnboardingRedirectURI != "")
 	if len(realmConf.SelfRegisterGroupNames) == 0 ||
-		(realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
+		!hasValidRedirectURI ||
 		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
 	}
 
-	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, nil)
+	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, ctxOverride)
 	if err != nil {
 		return "", err
 	}
