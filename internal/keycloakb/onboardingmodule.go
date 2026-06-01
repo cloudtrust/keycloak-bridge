@@ -49,9 +49,8 @@ type OnboardingModule interface {
 		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(userID string, username string, createdTimestamp int64, thirdParty *string) error) error
-	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		onboardingClientID string, onboardingRedirectURI string) (string, error)
-	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
+	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string, onboardingClientID string, onboardingRedirectURI string) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKeyParams *ContextKeyParameters) (string, error)
 }
 
 // NewOnboardingModule creates an onboarding module
@@ -268,32 +267,35 @@ func (om *onboardingModule) getUserByEmailIfDuplicateNotAllowed(ctx context.Cont
 	return &kcUser, nil
 }
 
-func (om *onboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKeyParam *string) (string, error) {
-	if realmConf.OnboardingRedirectURI == nil {
-		om.logger.Warn(ctx, "msg", "onboardingRedirectURI is null")
-		return "", errorhandler.CreateInternalServerError("onboardingRedirectURI")
+func (om *onboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKeyParams *ContextKeyParameters) (string, error) {
+	var onboardingRedirectURI string
+	if contextKeyParams != nil && contextKeyParams.OnboardingRedirectURI != nil && *contextKeyParams.OnboardingRedirectURI != "" {
+		onboardingRedirectURI = *contextKeyParams.OnboardingRedirectURI
+	} else {
+		if realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "" {
+			om.logger.Warn(ctx, "msg", "onboardingRedirectURI is null")
+			return "", errorhandler.CreateInternalServerError("onboardingRedirectURI")
+		}
+		onboardingRedirectURI = *realmConf.OnboardingRedirectURI
 	}
-	onboardingRedirectURI := *realmConf.OnboardingRedirectURI
 
+	var addParams = map[string]string{}
 	if targetRealmName != customerRealmName {
-		urlOnboardingRedirectURI, err := url.Parse(onboardingRedirectURI)
-		if err != nil {
-			om.logger.Warn(ctx, "msg", "Failed to parse onboardingRedirectURI", "err", err.Error())
-			return "", err
-		}
-		queryParams := urlOnboardingRedirectURI.Query()
-		queryParams.Set("customerRealm", customerRealmName)
-		urlOnboardingRedirectURI.RawQuery = queryParams.Encode()
-		onboardingRedirectURI = urlOnboardingRedirectURI.String()
+		addParams["customerRealm"] = customerRealmName
 	}
-	if contextKeyParam != nil {
+	if contextKeyParams != nil && contextKeyParams.ID != nil {
+		addParams["context"] = *contextKeyParams.ID
+	}
+	if len(addParams) > 0 {
 		urlOnboardingRedirectURI, err := url.Parse(onboardingRedirectURI)
 		if err != nil {
 			om.logger.Warn(ctx, "msg", "Failed to parse onboardingRedirectURI", "err", err.Error())
 			return "", err
 		}
 		queryParams := urlOnboardingRedirectURI.Query()
-		queryParams.Set("context", *contextKeyParam)
+		for key, value := range addParams {
+			queryParams.Set(key, value)
+		}
 		urlOnboardingRedirectURI.RawQuery = queryParams.Encode()
 		onboardingRedirectURI = urlOnboardingRedirectURI.String()
 	}

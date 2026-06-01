@@ -16,6 +16,7 @@ import (
 	configuration "github.com/cloudtrust/common-service/v2/configuration"
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apimanagement "github.com/cloudtrust/keycloak-bridge/api/management"
+	keycloakb "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	keycloak "github.com/cloudtrust/keycloak-client/v2"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -1969,18 +1970,18 @@ func (m *OnboardingModule) EXPECT() *OnboardingModuleMockRecorder {
 }
 
 // ComputeOnboardingRedirectURI mocks base method.
-func (m *OnboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error) {
+func (m *OnboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName, customerRealmName string, realmConf configuration.RealmConfiguration, contextKeyParams *keycloakb.ContextKeyParameters) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ComputeOnboardingRedirectURI", ctx, targetRealmName, customerRealmName, realmConf, contextKey)
+	ret := m.ctrl.Call(m, "ComputeOnboardingRedirectURI", ctx, targetRealmName, customerRealmName, realmConf, contextKeyParams)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ComputeOnboardingRedirectURI indicates an expected call of ComputeOnboardingRedirectURI.
-func (mr *OnboardingModuleMockRecorder) ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, contextKey any) *gomock.Call {
+func (mr *OnboardingModuleMockRecorder) ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, contextKeyParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeOnboardingRedirectURI", reflect.TypeOf((*OnboardingModule)(nil).ComputeOnboardingRedirectURI), ctx, targetRealmName, customerRealmName, realmConf, contextKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeOnboardingRedirectURI", reflect.TypeOf((*OnboardingModule)(nil).ComputeOnboardingRedirectURI), ctx, targetRealmName, customerRealmName, realmConf, contextKeyParams)
 }
 
 // CreateUser mocks base method.
