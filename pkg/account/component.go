@@ -666,15 +666,11 @@ func (c *component) GetLinkedAccounts(ctx context.Context) ([]api.LinkedAccountR
 func (c *component) DeleteLinkedAccount(ctx context.Context, providerAlias string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
-	var userID = ctx.Value(cs.CtContextUserID).(string)
-	var username = ctx.Value(cs.CtContextUsername).(string)
 
 	if err := c.keycloakAccountClient.DeleteLinkedAccount(accessToken, currentRealm, providerAlias); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't delete linked account", "err", err.Error())
 		return err
 	}
-
-	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_DELETE_LINKED_ACCOUNT", currentRealm, userID, username, map[string]string{"providerAlias": providerAlias}))
 
 	return nil
 }
