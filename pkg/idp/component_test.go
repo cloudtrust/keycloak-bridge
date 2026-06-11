@@ -803,13 +803,13 @@ func TestDeleteUser(t *testing.T) {
 	})
 	t.Run("Failed to delete user", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
-		mocks.keycloakIdpClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(anyError)
+		mocks.keycloakIdpClient.EXPECT().DeleteExtIDPTeamMemberUser(accessToken, realmName, realmName, userID).Return(anyError)
 		err := idpComponent.DeleteUser(ctx, realmName, userID, nil)
 		assert.Error(t, err)
 	})
-	t.Run("Failed to delete user", func(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
-		mocks.keycloakIdpClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteExtIDPTeamMemberUser(accessToken, realmName, realmName, userID).Return(nil)
 		err := idpComponent.DeleteUser(ctx, realmName, userID, nil)
 		assert.NoError(t, err)
 	})
