@@ -84,6 +84,20 @@ func (mr *KeycloakIdpClientMockRecorder) CreateIdpMapper(accessToken, realmName,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdpMapper", reflect.TypeOf((*KeycloakIdpClient)(nil).CreateIdpMapper), accessToken, realmName, idpAlias, mapperRep)
 }
 
+// DeleteExtIDPTeamMemberUser mocks base method.
+func (m *KeycloakIdpClient) DeleteExtIDPTeamMemberUser(accessToken, realmReqName, realmName, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteExtIDPTeamMemberUser", accessToken, realmReqName, realmName, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteExtIDPTeamMemberUser indicates an expected call of DeleteExtIDPTeamMemberUser.
+func (mr *KeycloakIdpClientMockRecorder) DeleteExtIDPTeamMemberUser(accessToken, realmReqName, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExtIDPTeamMemberUser", reflect.TypeOf((*KeycloakIdpClient)(nil).DeleteExtIDPTeamMemberUser), accessToken, realmReqName, realmName, userID)
+}
+
 // DeleteIdp mocks base method.
 func (m *KeycloakIdpClient) DeleteIdp(accessToken, realmName, idpAlias string) error {
 	m.ctrl.T.Helper()
@@ -110,20 +124,6 @@ func (m *KeycloakIdpClient) DeleteIdpMapper(accessToken, realmName, idpAlias, ma
 func (mr *KeycloakIdpClientMockRecorder) DeleteIdpMapper(accessToken, realmName, idpAlias, mapperID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdpMapper", reflect.TypeOf((*KeycloakIdpClient)(nil).DeleteIdpMapper), accessToken, realmName, idpAlias, mapperID)
-}
-
-// DeleteUser mocks base method.
-func (m *KeycloakIdpClient) DeleteUser(accessToken, realmName, userID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteUser", accessToken, realmName, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteUser indicates an expected call of DeleteUser.
-func (mr *KeycloakIdpClientMockRecorder) DeleteUser(accessToken, realmName, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*KeycloakIdpClient)(nil).DeleteUser), accessToken, realmName, userID)
 }
 
 // GetComponents mocks base method.
