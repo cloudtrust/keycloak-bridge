@@ -80,17 +80,17 @@ func (m *ContextKeyManager) EXPECT() *ContextKeyManagerMockRecorder {
 	return m.recorder
 }
 
-// GetOverride mocks base method.
-func (m *ContextKeyManager) GetOverride(ctx context.Context, contextKey, realm string) (keycloakb.ContextKeyParameters, error) {
+// GetOverrideByIdentitiesRealm mocks base method.
+func (m *ContextKeyManager) GetOverrideByIdentitiesRealm(ctx context.Context, contextKey, identitiesRealm string) (keycloakb.ContextKeyParameters, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOverride", ctx, contextKey, realm)
+	ret := m.ctrl.Call(m, "GetOverrideByIdentitiesRealm", ctx, contextKey, identitiesRealm)
 	ret0, _ := ret[0].(keycloakb.ContextKeyParameters)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetOverride indicates an expected call of GetOverride.
-func (mr *ContextKeyManagerMockRecorder) GetOverride(ctx, contextKey, realm any) *gomock.Call {
+// GetOverrideByIdentitiesRealm indicates an expected call of GetOverrideByIdentitiesRealm.
+func (mr *ContextKeyManagerMockRecorder) GetOverrideByIdentitiesRealm(ctx, contextKey, identitiesRealm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOverride", reflect.TypeOf((*ContextKeyManager)(nil).GetOverride), ctx, contextKey, realm)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOverrideByIdentitiesRealm", reflect.TypeOf((*ContextKeyManager)(nil).GetOverrideByIdentitiesRealm), ctx, contextKey, identitiesRealm)
 }

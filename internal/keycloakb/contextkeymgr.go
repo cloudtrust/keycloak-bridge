@@ -14,6 +14,7 @@ var (
 // ContextKeyLoader interface
 type ContextKeyLoader interface {
 	GetContextKey(ctx context.Context, ctxKeyID string, customerRealm string) (configuration.RealmContextKey, error)
+	GetContextKeyByID(ctx context.Context, ctxKeyID string) (configuration.RealmContextKey, error)
 	GetDefaultContextKeyForCustomerRealm(ctx context.Context, customerRealm string) (configuration.RealmContextKey, error)
 }
 
@@ -45,6 +46,18 @@ func (c *ContextKeyManager) GetOverride(ctx context.Context, contextKey string, 
 	res, err := c.contextKeyLoader.GetContextKey(ctx, contextKey, realm)
 	if err != nil {
 		return ContextKeyParameters{}, err
+	}
+	return toContextKeyParameters(res), nil
+}
+
+// GetOverrideByIdentitiesRealm gets override values for an identities realm/context key pair
+func (c *ContextKeyManager) GetOverrideByIdentitiesRealm(ctx context.Context, contextKey string, identitiesRealm string) (ContextKeyParameters, error) {
+	res, err := c.contextKeyLoader.GetContextKeyByID(ctx, contextKey)
+	if err != nil {
+		return ContextKeyParameters{}, err
+	}
+	if res.IdentitiesRealm != identitiesRealm {
+		return ContextKeyParameters{}, errors.New("identities realm mismatch")
 	}
 	return toContextKeyParameters(res), nil
 }
