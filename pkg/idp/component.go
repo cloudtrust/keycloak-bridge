@@ -26,7 +26,7 @@ type KeycloakIdpClient interface {
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
-	DeleteUser(accessToken string, realmName, userID string) error
+	DeleteExtIDPTeamMemberUser(accessToken string, realmReqName string, realmName string, userID string) error
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	// IDP
 	GetIdp(accessToken string, realmName string, idpAlias string) (kc.IdentityProviderRepresentation, error)
@@ -410,7 +410,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName string, userID str
 		}
 	}
 
-	err = c.keycloakIdpClient.DeleteUser(accessToken, realmName, userID)
+	err = c.keycloakIdpClient.DeleteExtIDPTeamMemberUser(accessToken, realmName, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to get user from keycloak", "err", err.Error(), "realm", realmName, "user", userID)
 		return err
