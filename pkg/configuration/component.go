@@ -20,7 +20,7 @@ type Component interface {
 
 // ContextKeyManager interface
 type ContextKeyManager interface {
-	GetOverride(ctx context.Context, contextKey string, realm string) (keycloakb.ContextKeyParameters, error)
+	GetOverrideByIdentitiesRealm(ctx context.Context, contextKey string, identitiesRealm string) (keycloakb.ContextKeyParameters, error)
 }
 
 // NewComponent creates a new Component
@@ -33,7 +33,7 @@ func NewComponent(contextKeyManager ContextKeyManager, logger log.Logger) Compon
 
 // GetIdentificationURI returns the identification URI for a given context key and realm
 func (c *component) GetIdentificationURI(ctx context.Context, realm string, contextKey string) (string, error) {
-	ctxOverride, err := c.contextKeyMgr.GetOverride(ctx, contextKey, realm)
+	ctxOverride, err := c.contextKeyMgr.GetOverrideByIdentitiesRealm(ctx, contextKey, realm)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Invalid (context-key, realm) pair", "context-key", contextKey, "realm", realm, "err", err.Error())
 		return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".realm-and-context-key")
