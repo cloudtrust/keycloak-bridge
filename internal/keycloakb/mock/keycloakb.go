@@ -958,6 +958,21 @@ func (mr *ContextKeyLoaderMockRecorder) GetContextKey(ctx, ctxKeyID, customerRea
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextKey", reflect.TypeOf((*ContextKeyLoader)(nil).GetContextKey), ctx, ctxKeyID, customerRealm)
 }
 
+// GetContextKeyByID mocks base method.
+func (m *ContextKeyLoader) GetContextKeyByID(ctx context.Context, ctxKeyID string) (configuration.RealmContextKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContextKeyByID", ctx, ctxKeyID)
+	ret0, _ := ret[0].(configuration.RealmContextKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContextKeyByID indicates an expected call of GetContextKeyByID.
+func (mr *ContextKeyLoaderMockRecorder) GetContextKeyByID(ctx, ctxKeyID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextKeyByID", reflect.TypeOf((*ContextKeyLoader)(nil).GetContextKeyByID), ctx, ctxKeyID)
+}
+
 // GetDefaultContextKeyForCustomerRealm mocks base method.
 func (m *ContextKeyLoader) GetDefaultContextKeyForCustomerRealm(ctx context.Context, customerRealm string) (configuration.RealmContextKey, error) {
 	m.ctrl.T.Helper()
