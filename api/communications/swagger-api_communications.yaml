@@ -25,26 +25,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Actions'
-  /realms/{realm}/send-mail:
-    post:
-      tags:
-      - Email
-      summary: Send an email to a user
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EmailRepresentation'
-      responses:
-        204:
-          description: successful operation
   /realms/{realm}/users/{userID}/send-mail:
     post:
       tags:
