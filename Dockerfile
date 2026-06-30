@@ -16,7 +16,7 @@ RUN curl -s https://artifactory.svc.elca.ch:443/artifactory/prj_cloudtrust_gener
 COPY ./bin/keycloak_bridge /usr/bin/keycloak_bridge
 RUN chmod +x /usr/bin/keycloak_bridge
 
-FROM r-docker-registry-access-redhat-com.artifactory.svc.elca.ch/ubi8-micro:8.10-1779859061@sha256:41d80530c06076f7f96094e998b28a22009b9247fe207d6b62b7f5aa61656ea7
+FROM r-docker-registry-access-redhat-com.artifactory.svc.elca.ch/ubi8-micro:8.10-1782810378@sha256:a75feff77922ee018f8247d38de068d45f38b6eada96b57aa178986df73068a4
 
 COPY --from=build-env /etc/pki /etc/pki
 COPY --from=build-env /etc/ssl /etc/ssl
