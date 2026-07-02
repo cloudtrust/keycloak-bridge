@@ -1300,7 +1300,11 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "EMAIL_ONBOARDING_SENT", realmName, userID, *kcUser.Username, nil))
+	details := map[string]string{}
+	if contextKey != nil {
+		details["contextKey"] = *contextKey
+	}
+	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "EMAIL_ONBOARDING_SENT", realmName, userID, *kcUser.Username, details))
 
 	return nil
 }
