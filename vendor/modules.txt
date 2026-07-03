@@ -6,7 +6,7 @@ filippo.io/edwards25519/field
 ## explicit; go 1.25.0
 github.com/IBM/sarama
 github.com/IBM/sarama/internal/queue
-# github.com/cloudtrust/common-service/v2 v2.20.2
+# github.com/cloudtrust/common-service/v2 v2.21.0
 ## explicit; go 1.26.1
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -27,7 +27,7 @@ github.com/cloudtrust/common-service/v2/validation
 # github.com/cloudtrust/httpclient v1.6.0
 ## explicit; go 1.25.3
 github.com/cloudtrust/httpclient
-# github.com/cloudtrust/kafka-client v1.9.0
+# github.com/cloudtrust/kafka-client v1.10.0
 ## explicit; go 1.26.1
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
@@ -153,7 +153,7 @@ github.com/klauspost/compress/s2
 github.com/klauspost/compress/snappy/xerial
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/nyaruka/phonenumbers/v2 v2.0.4
+# github.com/nyaruka/phonenumbers/v2 v2.0.5
 ## explicit; go 1.24.0
 github.com/nyaruka/phonenumbers/v2
 github.com/nyaruka/phonenumbers/v2/internal/regexbasedmatcher
