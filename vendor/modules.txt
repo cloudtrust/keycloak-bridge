@@ -2,10 +2,11 @@
 ## explicit; go 1.24.0
 filippo.io/edwards25519
 filippo.io/edwards25519/field
-# github.com/IBM/sarama v1.48.0
+# github.com/IBM/sarama v1.50.1
 ## explicit; go 1.25.0
 github.com/IBM/sarama
-# github.com/cloudtrust/common-service/v2 v2.20.0
+github.com/IBM/sarama/internal/queue
+# github.com/cloudtrust/common-service/v2 v2.20.1
 ## explicit; go 1.26.1
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -46,7 +47,6 @@ github.com/davecgh/go-spew/spew
 github.com/eapache/go-resiliency/breaker
 # github.com/eapache/queue v1.1.0
 ## explicit
-github.com/eapache/queue
 # github.com/fsnotify/fsnotify v1.9.0
 ## explicit; go 1.17
 github.com/fsnotify/fsnotify
@@ -140,7 +140,7 @@ github.com/jcmturner/gokrb5/v8/types
 ## explicit; go 1.13
 github.com/jcmturner/rpc/v2/mstypes
 github.com/jcmturner/rpc/v2/ndr
-# github.com/klauspost/compress v1.18.5
+# github.com/klauspost/compress v1.18.6
 ## explicit; go 1.24
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
@@ -222,11 +222,11 @@ go.uber.org/mock/gomock
 # go.yaml.in/yaml/v3 v3.0.4
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/crypto v0.50.0
+# golang.org/x/crypto v0.52.0
 ## explicit; go 1.25.0
 golang.org/x/crypto/md4
 golang.org/x/crypto/pbkdf2
-# golang.org/x/net v0.53.0
+# golang.org/x/net v0.55.0
 ## explicit; go 1.25.0
 golang.org/x/net/http2/hpack
 golang.org/x/net/internal/socks
@@ -237,11 +237,11 @@ golang.org/x/net/publicsuffix
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.43.0
+# golang.org/x/sys v0.45.0
 ## explicit; go 1.25.0
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.36.0
+# golang.org/x/text v0.37.0
 ## explicit; go 1.25.0
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
