@@ -6,7 +6,7 @@ filippo.io/edwards25519/field
 ## explicit; go 1.25.0
 github.com/IBM/sarama
 github.com/IBM/sarama/internal/queue
-# github.com/cloudtrust/common-service/v2 v2.20.1
+# github.com/cloudtrust/common-service/v2 v2.20.2
 ## explicit; go 1.26.1
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -45,8 +45,6 @@ github.com/davecgh/go-spew/spew
 # github.com/eapache/go-resiliency v1.7.0
 ## explicit; go 1.13
 github.com/eapache/go-resiliency/breaker
-# github.com/eapache/queue v1.1.0
-## explicit
 # github.com/fsnotify/fsnotify v1.9.0
 ## explicit; go 1.17
 github.com/fsnotify/fsnotify
@@ -155,9 +153,14 @@ github.com/klauspost/compress/s2
 github.com/klauspost/compress/snappy/xerial
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/nyaruka/phonenumbers v1.7.2
-## explicit; go 1.23.0
-github.com/nyaruka/phonenumbers
+# github.com/nyaruka/phonenumbers/v2 v2.0.4
+## explicit; go 1.24.0
+github.com/nyaruka/phonenumbers/v2
+github.com/nyaruka/phonenumbers/v2/internal/regexbasedmatcher
+github.com/nyaruka/phonenumbers/v2/internal/regexcache
+github.com/nyaruka/phonenumbers/v2/internal/serialize
+github.com/nyaruka/phonenumbers/v2/internal/stringbuilder
+github.com/nyaruka/phonenumbers/v2/metadata
 # github.com/pelletier/go-toml/v2 v2.2.4
 ## explicit; go 1.21.0
 github.com/pelletier/go-toml/v2
@@ -247,13 +250,7 @@ golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
 golang.org/x/text/encoding/unicode
-golang.org/x/text/internal/format
-golang.org/x/text/internal/language
-golang.org/x/text/internal/language/compact
-golang.org/x/text/internal/tag
 golang.org/x/text/internal/utf8internal
-golang.org/x/text/language
-golang.org/x/text/language/display
 golang.org/x/text/runes
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
