@@ -151,7 +151,6 @@ pprof-route-enabled: true
 # Liveness probe
 livenessprobe-http-timeout: 900
 livenessprobe-cache-duration: 500
-livenessprobe-audit-timeout: 3000
 healthcheck-endpoints:
   Keycloak: http://keycloak.internal.local:8080
 
@@ -196,9 +195,9 @@ hrd:
 kafka:
 - id: cluster1
   enabled: true
-  version: "3.1.0"
+  version: "4.1.1"
   tls-enabled: false
-  sarama-log-enabled: true
+  sarama-log-enabled: false
   brokers:
   - "kafka:29093"
   security:

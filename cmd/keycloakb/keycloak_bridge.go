@@ -76,7 +76,6 @@ type RateKey int
 const (
 	defaultPublishingIP = "0.0.0.0"
 	pathHealthCheck     = "/health/check"
-	pathHealthLive      = "/health/live"
 
 	RateKeyAccount          = iota
 	RateKeyCommunications   = iota
@@ -92,76 +91,79 @@ const (
 	RateKeyValidation       = iota
 	RateKeyIDP              = iota
 
-	cfgConfigFile               = "config-file"
-	cfgHTTPAddrInternal         = "internal-http-host-port"
-	cfgHTTPAddrManagement       = "management-http-host-port"
-	cfgHTTPAddrAccount          = "account-http-host-port"
-	cfgHTTPAddrRegister         = "register-http-host-port"
-	cfgHTTPAddrMobile           = "mobile-http-host-port"
-	cfgHTTPAddrMonitoring       = "monitoring-http-host-port"
-	cfgHTTPAddrConfiguration    = "configuration-http-host-port"
-	cfgAddrAccounting           = "accounting-api-uri"
-	cfgAccountingTimeout        = "accounting-timeout"
-	cfgAudienceRequired         = "audience-required"
-	cfgMobileAudienceRequired   = "mobile-audience-required"
-	cfgValidationBasicAuthToken = "validation-basic-auth-token"
-	cfgPprofRouteEnabled        = "pprof-route-enabled"
-	cfgConfigRwDbParams         = "db-config-rw"
-	cfgConfigRoDbParams         = "db-config-ro"
-	cfgRateKeyValidation        = "rate-validation"
-	cfgRateKeyCommunications    = "rate-communications"
-	cfgRateKeyAccount           = "rate-account"
-	cfgRateKeyMobile            = "rate-mobile"
-	cfgRateKeyMonitoring        = "rate-monitoring"
-	cfgRateKeyManagement        = "rate-management"
-	cfgRateKeyManagementStatus  = "rate-management-status"
-	cfgRateKeyStatistics        = "rate-statistics"
-	cfgRateKeyRegister          = "rate-register"
-	cfgRateKeySupport           = "rate-support"
-	cfgRateKeyTasks             = "rate-tasks"
-	cfgRateKeyKYC               = "rate-kyc"
-	cfgRateKeyIDP               = "rate-idp"
-	cfgAllowedOrigins           = "cors-allowed-origins"
-	cfgAllowedMethods           = "cors-allowed-methods"
-	cfgAllowCredentials         = "cors-allow-credentials"
-	cfgAllowedHeaders           = "cors-allowed-headers"
-	cfgExposedHeaders           = "cors-exposed-headers"
-	cfgDebug                    = "cors-debug"
-	cfgLogLevel                 = "log-level"
-	cfgAccessLogsEnabled        = "access-logs"
-	cfgTrustIDGroups            = "trustid-groups"
-	cfgRegisterRealm            = "register-realm"
-	cfgRegisterMaxInactiveLock  = "register-inactive-lock-duration"
-	cfgTechnicalRealm           = "technical-realm"
-	cfgTechnicalUsername        = "technical-username"
-	cfgTechnicalPassword        = "technical-password"
-	cfgTechnicalClientID        = "technical-client-id"
-	cfgRecaptchaURL             = "recaptcha-url"
-	cfgRecaptchaSecret          = "recaptcha-secret"
-	cfgArchiveRwDbParams        = "db-archive-rw"
-	cfgDbArchiveAesGcmKey       = "db-archive-aesgcm-key"
-	cfgDbArchiveAesGcmTagSize   = "db-archive-aesgcm-tag-size"
-	cfgMaxLifeSpan              = "max-lifespan"
-	cfgGlnRefDataEnabled        = "gln-refdata-enabled"
-	cfgGlnRefDataURI            = "gln-refdata-uri"
-	cfgGlnRefDataTimeout        = "gln-refdata-timeout"
-	cfgGlnNaRegEnabled          = "gln-nareg-enabled"
-	cfgGlnNaRegURI              = "gln-nareg-uri"
-	cfgGlnNaRegTimeout          = "gln-nareg-timeout"
-	cfgGlnPsyRegEnabled         = "gln-psyreg-enabled"
-	cfgGlnPsyRegURI             = "gln-psyreg-uri"
-	cfgGlnPsyRegTimeout         = "gln-psyreg-timeout"
-	cfgGlnMedRegEnabled         = "gln-medreg-enabled"
-	cfgGlnMedRegURI             = "gln-medreg-uri"
-	cfgGlnMedRegTimeout         = "gln-medreg-timeout"
-	cfgValidationRules          = "validation-rules"
-	cfgOnboardingRealmOverrides = "onboarding-realm-overrides"
-	cfgAddrAccreditations       = "accreditations-api-uri"
-	cfgAccreditationsTimeout    = "accreditations-timeout"
-	cfgAddrIdnow                = "idnow-service-api-uri"
-	cfgIdnowTimeout             = "idnow-service-timeout"
-	cfgContextKeys              = "context-keys"
-	cfgLogEventRate             = "log-events-rate"
+	cfgConfigFile                 = "config-file"
+	cfgHTTPAddrInternal           = "internal-http-host-port"
+	cfgHTTPAddrManagement         = "management-http-host-port"
+	cfgHTTPAddrAccount            = "account-http-host-port"
+	cfgHTTPAddrRegister           = "register-http-host-port"
+	cfgHTTPAddrMobile             = "mobile-http-host-port"
+	cfgHTTPAddrMonitoring         = "monitoring-http-host-port"
+	cfgHTTPAddrConfiguration      = "configuration-http-host-port"
+	cfgAddrAccounting             = "accounting-api-uri"
+	cfgAccountingTimeout          = "accounting-timeout"
+	cfgAudienceRequired           = "audience-required"
+	cfgMobileAudienceRequired     = "mobile-audience-required"
+	cfgValidationBasicAuthToken   = "validation-basic-auth-token"
+	cfgPprofRouteEnabled          = "pprof-route-enabled"
+	cfgConfigRwDbParams           = "db-config-rw"
+	cfgConfigRoDbParams           = "db-config-ro"
+	cfgRateKeyValidation          = "rate-validation"
+	cfgRateKeyCommunications      = "rate-communications"
+	cfgRateKeyAccount             = "rate-account"
+	cfgRateKeyMobile              = "rate-mobile"
+	cfgRateKeyMonitoring          = "rate-monitoring"
+	cfgRateKeyManagement          = "rate-management"
+	cfgRateKeyManagementStatus    = "rate-management-status"
+	cfgRateKeyStatistics          = "rate-statistics"
+	cfgRateKeyRegister            = "rate-register"
+	cfgRateKeySupport             = "rate-support"
+	cfgRateKeyTasks               = "rate-tasks"
+	cfgRateKeyKYC                 = "rate-kyc"
+	cfgRateKeyIDP                 = "rate-idp"
+	cfgAllowedOrigins             = "cors-allowed-origins"
+	cfgAllowedMethods             = "cors-allowed-methods"
+	cfgAllowCredentials           = "cors-allow-credentials"
+	cfgAllowedHeaders             = "cors-allowed-headers"
+	cfgExposedHeaders             = "cors-exposed-headers"
+	cfgDebug                      = "cors-debug"
+	cfgLogLevel                   = "log-level"
+	cfgAccessLogsEnabled          = "access-logs"
+	cfgTrustIDGroups              = "trustid-groups"
+	cfgRegisterRealm              = "register-realm"
+	cfgRegisterMaxInactiveLock    = "register-inactive-lock-duration"
+	cfgTechnicalRealm             = "technical-realm"
+	cfgTechnicalUsername          = "technical-username"
+	cfgTechnicalPassword          = "technical-password"
+	cfgTechnicalClientID          = "technical-client-id"
+	cfgRecaptchaURL               = "recaptcha-url"
+	cfgRecaptchaSecret            = "recaptcha-secret"
+	cfgArchiveRwDbParams          = "db-archive-rw"
+	cfgDbArchiveAesGcmKey         = "db-archive-aesgcm-key"
+	cfgDbArchiveAesGcmTagSize     = "db-archive-aesgcm-tag-size"
+	cfgMaxLifeSpan                = "max-lifespan"
+	cfgGlnRefDataEnabled          = "gln-refdata-enabled"
+	cfgGlnRefDataURI              = "gln-refdata-uri"
+	cfgGlnRefDataTimeout          = "gln-refdata-timeout"
+	cfgGlnNaRegEnabled            = "gln-nareg-enabled"
+	cfgGlnNaRegURI                = "gln-nareg-uri"
+	cfgGlnNaRegTimeout            = "gln-nareg-timeout"
+	cfgGlnPsyRegEnabled           = "gln-psyreg-enabled"
+	cfgGlnPsyRegURI               = "gln-psyreg-uri"
+	cfgGlnPsyRegTimeout           = "gln-psyreg-timeout"
+	cfgGlnMedRegEnabled           = "gln-medreg-enabled"
+	cfgGlnMedRegURI               = "gln-medreg-uri"
+	cfgGlnMedRegTimeout           = "gln-medreg-timeout"
+	cfgValidationRules            = "validation-rules"
+	cfgOnboardingRealmOverrides   = "onboarding-realm-overrides"
+	cfgAddrAccreditations         = "accreditations-api-uri"
+	cfgAccreditationsTimeout      = "accreditations-timeout"
+	cfgAddrIdnow                  = "idnow-service-api-uri"
+	cfgIdnowTimeout               = "idnow-service-timeout"
+	cfgContextKeys                = "context-keys"
+	cfgLogEventRate               = "log-events-rate"
+	cfgLivenessprobeCacheDuration = "livenessprobe-cache-duration"
+	cfgLivenessprobeHTTPTimeout   = "livenessprobe-http-timeout"
+	cfgHealthcheckEndpoints       = "healthcheck-endpoints"
 
 	// Accreditation renewal
 	cfgDefaultAccreditationRequested = "default-accreditation-requested"
@@ -513,16 +515,12 @@ func main() {
 
 	// Health check configuration
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
-	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
-	var httpTimeout = c.GetDuration("livenessprobe-http-timeout") * time.Millisecond
+	var healthCheckCacheDuration = c.GetDuration(cfgLivenessprobeCacheDuration) * time.Millisecond
+	var httpTimeout = c.GetDuration(cfgLivenessprobeHTTPTimeout) * time.Millisecond
 	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
-	healthChecker.AddHTTPEndpoints(c.GetStringMapString("healthcheck-endpoints"), httpTimeout, 200, healthCheckCacheDuration)
-
-	var livenessChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
-	var livenessAuditTimeout = c.GetDuration("livenessprobe-audit-timeout") * time.Millisecond
-	livenessChecker.AddAuditEventsReporterModule("Audit Events Reporter", csevents.NewAuditEventReporterModule(eventProducer, logger), livenessAuditTimeout, healthCheckCacheDuration)
+	healthChecker.AddHTTPEndpoints(c.GetStringMapString(cfgHealthcheckEndpoints), httpTimeout, 200, healthCheckCacheDuration)
 
 	// GLN verifier
 	var glnLookupProviders []business.GlnLookupProvider
@@ -1011,7 +1009,6 @@ func main() {
 
 		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 		route.Handle(pathHealthCheck, healthChecker.MakeHandler(limiter))
-		route.Handle(pathHealthLive, livenessChecker.MakeHandler(limiter))
 
 		errc <- http.ListenAndServe(httpAddrMonitoring, route)
 	}()
@@ -1629,9 +1626,8 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgPprofRouteEnabled, true)
 
 	// Liveness probe
-	v.SetDefault("livenessprobe-http-timeout", 900)
-	v.SetDefault("livenessprobe-cache-duration", 500)
-	v.SetDefault("livenessprobe-audit-timeout", 3000)
+	v.SetDefault(cfgLivenessprobeHTTPTimeout, 900)
+	v.SetDefault(cfgLivenessprobeCacheDuration, 500)
 
 	// Register parameters
 	v.SetDefault(cfgRegisterRealm, "trustid")
