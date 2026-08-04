@@ -91,7 +91,7 @@ db-config-rw-enabled: true
 db-config-rw-host-port: host.docker.internal:3306
 db-config-rw-username: bridge
 db-config-rw-password: bridge-password
-db-config-rw-database: cloudtrust
+db-config-rw-database: config
 db-config-rw-protocol: tcp
 db-config-rw-parameters: time_zone='%2B00:00'
 db-config-rw-max-open-conns: 10
@@ -106,7 +106,7 @@ db-config-ro-enabled: true
 db-config-ro-host-port: host.docker.internal:3306
 db-config-ro-username: bridge
 db-config-ro-password: bridge-password
-db-config-ro-database: cloudtrust
+db-config-ro-database: config
 db-config-ro-protocol: tcp
 db-config-ro-parameters: time_zone='%2B00:00'
 db-config-ro-max-open-conns: 10
