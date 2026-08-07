@@ -2,8 +2,6 @@ package validation
 
 import (
 	"context"
-	"net/http"
-	"slices"
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
@@ -76,31 +74,24 @@ type component struct {
 	unknownAgentUsername string
 }
 
-// filterKeycloakError: These two functions can be moved as static functions in keycloak-client to be used in other interfaces (internal ones only !!!)
-func filterKeycloakError(err error, arrStatus ...int) error {
+// filterKeycloakError filters the error returned by Keycloak client and maps it to a more appropriate error type for the bridge API.
+func filterKeycloakError(err error) error {
 	if err == nil {
 		return nil
 	}
+
 	if httpErr, ok := err.(kc.HTTPError); ok {
-		if slices.Contains(arrStatus, httpErr.HTTPStatus) {
-			// If kept as HTTPError, error would be blocked by HTTP error handler
-			// As this is an internal interface, there is no information leaking issue if we
-			// map the error to a ClientDetailedError
-			return kc.ClientDetailedError{HTTPStatus: httpErr.HTTPStatus, Message: httpErr.Message}
-		}
+		// If kept as HTTPError, error would be blocked by HTTP error handler
+		// As this is an internal interface, there is no information leaking issue if we
+		// map the error to a ClientDetailedError
+		return kc.ClientDetailedError{HTTPStatus: httpErr.HTTPStatus, Message: httpErr.Message}
 	} else {
-		if cde, ok := err.(kc.ClientDetailedError); ok {
-			if slices.Contains(arrStatus, cde.HTTPStatus) {
-				return err
-			}
+		if _, ok := err.(kc.ClientDetailedError); ok {
+			return err
 		}
 	}
-	return errorhandler.CreateInternalServerError("keycloak")
-}
 
-func filterKeycloakErrorDefault(err error) error {
-	// By default, we let StatusBadRequest errors be transmitted to the caller
-	return filterKeycloakError(err, http.StatusBadRequest)
+	return errorhandler.CreateInternalServerError("keycloak")
 }
 
 // NewComponent returns the management component.
@@ -130,7 +121,7 @@ func (c *component) getKeycloakUser(ctx context.Context, realmName string, userI
 	kcUser, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "getKeycloakUser: can't find user in Keycloak", "err", err.Error(), "realmName", realmName, "userID", userID)
-		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+		return kc.UserRepresentation{}, filterKeycloakError(err)
 	}
 	return kcUser, nil
 }
@@ -208,7 +199,7 @@ func (c *component) UpdateUserAccreditations(ctx context.Context, realmName stri
 	kcUser, err = c.keycloakClient.GetUser(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to request user to Keycloak", "err", err.Error())
-		return err
+		return filterKeycloakError(err)
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
@@ -224,7 +215,7 @@ func (c *component) UpdateUserAccreditations(ctx context.Context, realmName stri
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update Keycloak user", "err", err.Error())
-		return filterKeycloakErrorDefault(err)
+		return filterKeycloakError(err)
 	}
 
 	var username = c.findFirstNonNil(events.CtEventUnknownUsername, kcUser.Username)
@@ -328,7 +319,7 @@ func (c *component) loadKeycloakUserCtx(v *validationContext) (*kc.UserRepresent
 			v.kcUser = &kcUser
 		} else {
 			c.logger.Warn(v.ctx, "msg", "Can't get user from Keycloak", "err", err.Error(), "realm", v.realmName, "user", v.userID)
-			return nil, err
+			return nil, filterKeycloakError(err)
 		}
 	}
 	return v.kcUser, nil
@@ -343,7 +334,7 @@ func (c *component) updateKeycloakUser(v *validationContext) error {
 	err = c.keycloakClient.UpdateUser(accessToken, v.realmName, v.userID, *v.kcUser)
 	if err != nil {
 		c.logger.Warn(v.ctx, "msg", "updateKeycloakUser: can't update user in KC", "err", err.Error(), "realmName", v.realmName, "userID", v.userID)
-		return filterKeycloakErrorDefault(err)
+		return filterKeycloakError(err)
 	}
 	return nil
 }
@@ -369,7 +360,7 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
-		return nil, err
+		return nil, filterKeycloakError(err)
 	}
 
 	var groupsRep = []api.GroupRepresentation{}
@@ -394,7 +385,7 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 	roles, err := c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get realm level role mappings", "err", err.Error(), "realm", realmName, "user", userID)
-		return nil, err
+		return nil, filterKeycloakError(err)
 	}
 
 	rolesRep := []api.RoleRepresentation{}

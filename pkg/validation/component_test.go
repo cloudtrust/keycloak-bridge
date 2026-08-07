@@ -9,7 +9,7 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service/v2"
-	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	cserrors "github.com/cloudtrust/common-service/v2/errors"
 	log "github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
@@ -44,49 +44,38 @@ func (m *componentMocks) createComponent() *component {
 }
 
 func TestFilterKeycloakError(t *testing.T) {
-	var isInternalServerError = func(err error) bool {
-		if v, ok := err.(errorhandler.Error); ok {
-			return v.Status == http.StatusInternalServerError
-		}
-		return false
-	}
-
 	t.Run("Nil error", func(t *testing.T) {
 		assert.Nil(t, filterKeycloakError(nil))
 	})
+
 	t.Run("Expected HTTPError", func(t *testing.T) {
-		var expectedMessage = "abcdef"
-		var inErr = kc.HTTPError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}
-		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
-		assert.NotNil(t, outErr)
+		expectedMessage := "abcdef"
+		inErr := kc.HTTPError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}
+		outErr := filterKeycloakError(inErr)
+
 		assert.Contains(t, outErr.Error(), expectedMessage)
-		assert.IsType(t, kc.ClientDetailedError{}, outErr)
+		assert.Equal(t, kc.ClientDetailedError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}, outErr)
 	})
-	t.Run("Unexpected HTTPError", func(t *testing.T) {
-		var expectedMessage = "abcdef"
-		var inErr = kc.HTTPError{HTTPStatus: http.StatusNotImplemented, Message: expectedMessage}
-		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
-		assert.NotNil(t, outErr)
-		assert.True(t, isInternalServerError(outErr))
-	})
+
 	t.Run("Expected ClientDetailedError", func(t *testing.T) {
-		var expectedMessage = "abcdef"
-		var inErr = kc.ClientDetailedError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}
-		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
-		assert.NotNil(t, outErr)
-		assert.Equal(t, outErr, inErr)
+		expectedMessage := "abcdef"
+		inErr := kc.ClientDetailedError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}
+		outErr := filterKeycloakError(inErr)
+
+		assert.Contains(t, outErr.Error(), expectedMessage)
+		assert.Equal(t, kc.ClientDetailedError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}, outErr)
 	})
-	t.Run("Unexpected ClientDetailedError", func(t *testing.T) {
-		var expectedMessage = "abcdef"
-		var inErr = kc.ClientDetailedError{HTTPStatus: http.StatusNotImplemented, Message: expectedMessage}
-		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
+
+	t.Run("Unexpected error becomes internal server error", func(t *testing.T) {
+		expectedMessage := "abcdef"
+		inErr := errors.New(expectedMessage)
+		outErr := filterKeycloakError(inErr)
+
 		assert.NotNil(t, outErr)
-		assert.True(t, isInternalServerError(outErr))
-	})
-	t.Run("Unknown source error", func(t *testing.T) {
-		var inErr = errors.New("unknown source error")
-		var outErr = filterKeycloakError(inErr, http.StatusInternalServerError)
-		assert.True(t, isInternalServerError(outErr))
+		assert.Equal(t, cserrors.Error{
+			Status:  http.StatusInternalServerError,
+			Message: ".keycloak",
+		}, outErr)
 	})
 }
 
@@ -115,6 +104,15 @@ func TestGetUserComponent(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, kcError)
 		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
+	})
+
+	t.Run("GetUser from Keycloak fails with HTTPError", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)
+		var kcError = kc.HTTPError{HTTPStatus: http.StatusNotFound, Message: "user-not-found"}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, kcError)
+		var _, err = component.GetUser(ctx, realm, userID)
+		assert.NotNil(t, err)
+		assert.Equal(t, kc.ClientDetailedError{HTTPStatus: http.StatusNotFound, Message: "user-not-found"}, err)
 	})
 
 	t.Run("Happy path", func(t *testing.T) {
@@ -192,7 +190,7 @@ func TestUpdateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
 		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
 		assert.NotNil(t, err)
-		assert.NotEqual(t, kcError, err)
+		assert.Equal(t, kcError, err)
 	})
 	t.Run("Fails to update user in KC with other error than ClientDetailedError", func(t *testing.T) {
 		var date = time.Now()
@@ -228,7 +226,7 @@ func TestUpdateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
 		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
 		assert.NotNil(t, err)
-		assert.NotEqual(t, kcError, err)
+		assert.Equal(t, kcError, err)
 	})
 	t.Run("Fails to update user in KC with other error than ClientDetailedError", func(t *testing.T) {
 		var user = api.UserRepresentation{
@@ -454,10 +452,11 @@ func TestGetGroupsOfUser(t *testing.T) {
 	})
 	t.Run("Error accessToken", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, nil)
-		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error"))
+		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, kc.HTTPError{HTTPStatus: http.StatusForbidden, Message: "forbidden"})
 
 		_, err := component.GetGroupsOfUser(ctx, "master", userID)
 		assert.NotNil(t, err)
+		assert.Equal(t, kc.ClientDetailedError{HTTPStatus: http.StatusForbidden, Message: "forbidden"}, err)
 	})
 }
 
@@ -483,10 +482,11 @@ func TestGetRolesOfUser(t *testing.T) {
 
 	t.Run("GetRealmLevelRoleMappings fails", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
-		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{}, testError)
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{}, kc.HTTPError{HTTPStatus: http.StatusUnauthorized, Message: "unauthorized"})
 
 		_, err := component.GetRolesOfUser(ctx, realmName, userID)
 		assert.Error(t, err)
+		assert.Equal(t, kc.ClientDetailedError{HTTPStatus: http.StatusUnauthorized, Message: "unauthorized"}, err)
 	})
 
 	t.Run("Success", func(t *testing.T) {
