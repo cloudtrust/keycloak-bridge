@@ -1079,22 +1079,22 @@ func createValidUserRepresentation() UserRepresentation {
 
 	boolTrue := true
 
-	var user = UserRepresentation{}
-	user.ID = new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
-	user.Username = new("username")
-	user.Email = new("username@company.com")
-	user.Enabled = &boolTrue
-	user.EmailVerified = &boolTrue
-	user.PhoneNumber = new("+415174234")
-	user.PhoneNumberVerified = &boolTrue
-	user.FirstName = new("Firstname")
-	user.LastName = new("Lastname")
-	user.Label = new("label")
-	user.Gender = new("F")
-	user.BirthDate = new("1990-12-28")
-	user.Groups = &groups
-	user.Roles = &roles
-	user.Locale = new("en")
+	var user = UserRepresentation{
+		ID:                  new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"),
+		Username:            new("username"),
+		Email:               new("username@company.com"),
+		Enabled:             &boolTrue,
+		EmailVerified:       &boolTrue,
+		PhoneNumber:         new("+415174234"),
+		PhoneNumberVerified: &boolTrue,
+		FirstName:           new("Firstname"),
+		LastName:            new("Lastname"),
+		Label:               new("label"),
+		Gender:              new("F"),
+		BirthDate:           new("1990-12-28"),
+		Groups:              &groups,
+		Roles:               &roles,
+		Locale:              new("en")}
 
 	return user
 }
@@ -1104,21 +1104,21 @@ func createValidUpdatableUserRepresentation() UpdatableUserRepresentation {
 
 	boolTrue := true
 
-	var user = UpdatableUserRepresentation{}
-	user.ID = new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
-	user.Username = new("username")
-	user.Email = csjson.StringToOptional("username@company.com")
-	user.Enabled = &boolTrue
-	user.EmailVerified = &boolTrue
-	user.PhoneNumber = csjson.StringToOptional("+415174234")
-	user.PhoneNumberVerified = &boolTrue
-	user.FirstName = new("Firstname")
-	user.LastName = new("Lastname")
-	user.Label = new("label")
-	user.Gender = new("F")
-	user.BirthDate = new("1990-12-28")
-	user.Roles = &roles
-	user.Locale = new("en")
+	var user = UpdatableUserRepresentation{
+		ID:                  new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"),
+		Username:            new("username"),
+		Email:               csjson.StringToOptional("username@company.com"),
+		Enabled:             &boolTrue,
+		EmailVerified:       &boolTrue,
+		PhoneNumber:         csjson.StringToOptional("+415174234"),
+		PhoneNumberVerified: &boolTrue,
+		FirstName:           new("Firstname"),
+		LastName:            new("Lastname"),
+		Label:               new("label"),
+		Gender:              new("F"),
+		BirthDate:           new("1990-12-28"),
+		Roles:               &roles,
+		Locale:              new("en")}
 
 	return user
 }
@@ -1126,13 +1126,13 @@ func createValidUpdatableUserRepresentation() UpdatableUserRepresentation {
 func createValidRoleRepresentation() RoleRepresentation {
 	boolTrue := true
 
-	var role = RoleRepresentation{}
-	role.ID = new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
-	role.Name = new("name")
-	role.Description = new("description")
-	role.ContainerID = new("12345678-abcd-beef-feed-123456781234")
-	role.ClientRole = &boolTrue
-	role.Composite = &boolTrue
+	var role = RoleRepresentation{
+		ID:          new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"),
+		Name:        new("name"),
+		Description: new("description"),
+		ContainerID: new("12345678-abcd-beef-feed-123456781234"),
+		ClientRole:  &boolTrue,
+		Composite:   &boolTrue}
 
 	return role
 }
@@ -1141,9 +1141,9 @@ func createValidGroupRepresentation() GroupRepresentation {
 	id := "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"
 	name := "name"
 
-	var group = GroupRepresentation{}
-	group.ID = &id
-	group.Name = &name
+	var group = GroupRepresentation{
+		ID:   &id,
+		Name: &name}
 
 	return group
 }
