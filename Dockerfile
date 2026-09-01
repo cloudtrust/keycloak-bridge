@@ -1,4 +1,4 @@
-FROM r-docker-registry-access-redhat-com.artifactory.svc.elca.ch/ubi8-minimal:8.10-1788165882@sha256:aacf6efc45ab0d25e0cf0329ab633d19983b6f6cf7c824fe72dd7c4ac71b1a9c AS build-env
+FROM r-docker-registry-access-redhat-com.artifactory.svc.elca.ch/ubi8-minimal:8.10-1788246577@sha256:128cb37755bd6bf436e009e2ac1eaf4ab264dea3d381834a5af2b678c8b8d197 AS build-env
 
 LABEL name="ephemeral/ct-keycloak-bridge" releaseName="ct-keycloak-bridge" repository="prj-cloudtrust-docker" releaseRepository="prj-cloudtrust-docker"
 
