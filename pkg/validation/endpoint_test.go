@@ -19,7 +19,7 @@ func TestGetUserEndpoint(t *testing.T) {
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeGetUserEndpoint(mockComponent)
+	var e = makeGetUserEndpoint(mockComponent)
 
 	var userID = "1234-452-4578"
 	var realm = "realm"
@@ -42,7 +42,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		mockComponent    = mock.NewComponent(mockCtrl)
 		mockProfileCache = mock.NewUserProfileCache(mockCtrl)
 
-		e             = MakeUpdateUserEndpoint(mockComponent, mockProfileCache)
+		e             = makeUpdateUserEndpoint(mockComponent, mockProfileCache)
 		userID        = "1234-452-4578"
 		realm         = "realm"
 		transactionID = "transactionID"
@@ -60,7 +60,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		assert.Nil(t, res)
 	})
 
-	t.Run("No error, no txnID", func(t *testing.T) {
+	t.Run("No error, no txnID, no ctxKey", func(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(userJSON)}
 
@@ -96,7 +96,7 @@ func TestUpdateUserAccreditationEndpoint(t *testing.T) {
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeUpdateUserAccreditationsEndpoint(mockComponent)
+	var e = makeUpdateUserAccreditationsEndpoint(mockComponent)
 	var userID = "1234-452-4578"
 	var realm = "realm"
 	var ctx = context.Background()
@@ -108,10 +108,11 @@ func TestUpdateUserAccreditationEndpoint(t *testing.T) {
 				Validity: new("4y"),
 			},
 		}
+		sponsor := "sponsor"
 		accreditationsJSON, _ := json.Marshal(accreditations)
-		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(accreditationsJSON)}
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(accreditationsJSON), prmSponsor: sponsor}
 
-		mockComponent.EXPECT().UpdateUserAccreditations(ctx, realm, userID, accreditations).Return(nil)
+		mockComponent.EXPECT().UpdateUserAccreditations(ctx, realm, userID, accreditations, &sponsor).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -146,7 +147,7 @@ func TestGetGroupsOfUserEndpoint(t *testing.T) {
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeGetGroupsOfUserEndpoint(mockComponent)
+	var e = makeGetGroupsOfUserEndpoint(mockComponent)
 
 	// No error
 	{
@@ -170,7 +171,7 @@ func TestGetRolessOfUserEndpoint(t *testing.T) {
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeGetRolesOfUserEndpoint(mockComponent)
+	var e = makeGetRolesOfUserEndpoint(mockComponent)
 
 	// No error
 	{

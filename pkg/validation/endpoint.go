@@ -31,16 +31,23 @@ type UserProfileCache interface {
 // NewEndpoints creates an Endpoints instance
 func NewEndpoints(component Component, profileCache UserProfileCache, endpointWrapper func(endpoint cs.Endpoint, name string) endpoint.Endpoint) Endpoints {
 	return Endpoints{
-		GetUser:                  endpointWrapper(MakeGetUserEndpoint(component), "get_user"),
-		UpdateUser:               endpointWrapper(MakeUpdateUserEndpoint(component, profileCache), "update_user"),
-		UpdateUserAccreditations: endpointWrapper(MakeUpdateUserAccreditationsEndpoint(component), "update_user_accreditations"),
-		GetGroupsOfUser:          endpointWrapper(MakeGetGroupsOfUserEndpoint(component), "get_user_groups"),
-		GetRolesOfUser:           endpointWrapper(MakeGetRolesOfUserEndpoint(component), "get_user_roles"),
+		GetUser:                  endpointWrapper(makeGetUserEndpoint(component), "get_user"),
+		UpdateUser:               endpointWrapper(makeUpdateUserEndpoint(component, profileCache), "update_user"),
+		UpdateUserAccreditations: endpointWrapper(makeUpdateUserAccreditationsEndpoint(component), "update_user_accreditations"),
+		GetGroupsOfUser:          endpointWrapper(makeGetGroupsOfUserEndpoint(component), "get_user_groups"),
+		GetRolesOfUser:           endpointWrapper(makeGetRolesOfUserEndpoint(component), "get_user_roles"),
 	}
 }
 
-// MakeGetUserEndpoint endpoint creation
-func MakeGetUserEndpoint(component Component) cs.Endpoint {
+func getOptionalParam(m map[string]string, key string) *string {
+	if val, ok := m[key]; ok {
+		return &val
+	}
+	return nil
+}
+
+// makeGetUserEndpoint endpoint creation
+func makeGetUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
@@ -48,8 +55,8 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeUpdateUserEndpoint endpoint creation
-func MakeUpdateUserEndpoint(component Component, profileCache UserProfileCache) cs.Endpoint {
+// makeUpdateUserEndpoint endpoint creation
+func makeUpdateUserEndpoint(component Component, profileCache UserProfileCache) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmRealm]
@@ -64,17 +71,13 @@ func MakeUpdateUserEndpoint(component Component, profileCache UserProfileCache) 
 			return nil, err
 		}
 
-		txnID, ok := m[prmTxnID]
-		if !ok {
-			return nil, component.UpdateUser(ctx, realm, m[prmUserID], user, nil)
-		}
-
-		return nil, component.UpdateUser(ctx, realm, m[prmUserID], user, &txnID)
+		txnID := getOptionalParam(m, prmTxnID)
+		return nil, component.UpdateUser(ctx, realm, m[prmUserID], user, txnID)
 	}
 }
 
-// MakeUpdateUserAccreditationsEndpoint endpoint creation
-func MakeUpdateUserAccreditationsEndpoint(component Component) cs.Endpoint {
+// makeUpdateUserAccreditationsEndpoint endpoint creation
+func makeUpdateUserAccreditationsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -91,12 +94,13 @@ func MakeUpdateUserAccreditationsEndpoint(component Component) cs.Endpoint {
 			}
 		}
 
-		return nil, component.UpdateUserAccreditations(ctx, m[prmRealm], m[prmUserID], accreds)
+		sponsor := getOptionalParam(m, prmSponsor)
+		return nil, component.UpdateUserAccreditations(ctx, m[prmRealm], m[prmUserID], accreds, sponsor)
 	}
 }
 
-// MakeGetGroupsOfUserEndpoint creates an endpoint for GetGroupsOfUser
-func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
+// makeGetGroupsOfUserEndpoint creates an endpoint for GetGroupsOfUser
+func makeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
@@ -104,8 +108,8 @@ func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeGetRolesOfUserEndpoint creates an endpoint for GetRolesOfUser
-func MakeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
+// makeGetRolesOfUserEndpoint creates an endpoint for GetRolesOfUser
+func makeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
