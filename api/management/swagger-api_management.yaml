@@ -2647,6 +2647,8 @@ components:
       properties:
         emailThemeRealm:
           type: string
+        sponsor:
+          type: string
     CtxKeyAutoVoucherRepresentation:
       type: object
       properties:

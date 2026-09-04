@@ -426,6 +426,7 @@ type CtxKeyOnboardingRepresentation struct {
 // CtxKeyAccreditationRepresentation struct
 type CtxKeyAccreditationRepresentation struct {
 	EmailThemeRealm *string `json:"emailThemeRealm"`
+	Sponsor         *string `json:"sponsor"`
 }
 
 // CtxKeyAutoVoucherRepresentation struct
@@ -1578,6 +1579,7 @@ func ConvertToAPIContextKeyAccreditation(accreditationCfg *configuration.Context
 	}
 	return CtxKeyAccreditationRepresentation{
 		EmailThemeRealm: accreditationCfg.EmailThemeRealm,
+		Sponsor:         accreditationCfg.Sponsor,
 	}
 }
 
@@ -1585,6 +1587,7 @@ func ConvertToAPIContextKeyAccreditation(accreditationCfg *configuration.Context
 func (c *CtxKeyAccreditationRepresentation) ToDatabaseModel() *configuration.ContextKeyConfAccreditation {
 	return &configuration.ContextKeyConfAccreditation{
 		EmailThemeRealm: c.EmailThemeRealm,
+		Sponsor:         c.Sponsor,
 	}
 }
 
@@ -1592,6 +1595,7 @@ func (c *CtxKeyAccreditationRepresentation) ToDatabaseModel() *configuration.Con
 func (c *CtxKeyAccreditationRepresentation) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp("emailThemeRealm", c.EmailThemeRealm, constants.RegExpRealmName, false).
+		ValidateParameterRegExp("sponsor", c.Sponsor, constants.RegExpRealmName, false).
 		Status()
 }
 

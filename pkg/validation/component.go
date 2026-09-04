@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
@@ -43,6 +44,7 @@ type EventsReporterModule interface {
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	GetAdminConfiguration(context.Context, string) (configuration.RealmAdminConfiguration, error)
+	GetContextKeyByID(context.Context, string) (configuration.RealmContextKey, error)
 }
 
 // AccreditationsServiceClient interface
@@ -54,7 +56,7 @@ type AccreditationsServiceClient interface {
 type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID *string) error
-	UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation) error
+	UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation, sponsor *string) error
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 }
@@ -189,7 +191,7 @@ func (c *component) findFirstNonNil(defaultValue string, values ...*string) stri
 	return defaultValue
 }
 
-func (c *component) UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation) error {
+func (c *component) UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation, sponsor *string) error {
 	var accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get accessToken for technical user", "err", err.Error())
@@ -212,6 +214,9 @@ func (c *component) UpdateUserAccreditations(ctx context.Context, realmName stri
 	}
 
 	kcUser.SetFieldValues(fields.Accreditations, accreditations.ToKeycloak())
+	if sponsor != nil {
+		kcUser.SetAttributeString(constants.AttrbAccreditationSponsor, *sponsor)
+	}
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update Keycloak user", "err", err.Error())
