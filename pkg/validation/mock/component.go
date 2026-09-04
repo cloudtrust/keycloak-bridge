@@ -104,17 +104,17 @@ func (mr *ComponentMockRecorder) UpdateUser(ctx, realmName, userID, user, txnID 
 }
 
 // UpdateUserAccreditations mocks base method.
-func (m *Component) UpdateUserAccreditations(ctx context.Context, realmName, userID string, userAccreds []apivalidation.AccreditationRepresentation) error {
+func (m *Component) UpdateUserAccreditations(ctx context.Context, realmName, userID string, userAccreds []apivalidation.AccreditationRepresentation, sponsor *string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateUserAccreditations", ctx, realmName, userID, userAccreds)
+	ret := m.ctrl.Call(m, "UpdateUserAccreditations", ctx, realmName, userID, userAccreds, sponsor)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateUserAccreditations indicates an expected call of UpdateUserAccreditations.
-func (mr *ComponentMockRecorder) UpdateUserAccreditations(ctx, realmName, userID, userAccreds any) *gomock.Call {
+func (mr *ComponentMockRecorder) UpdateUserAccreditations(ctx, realmName, userID, userAccreds, sponsor any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserAccreditations", reflect.TypeOf((*Component)(nil).UpdateUserAccreditations), ctx, realmName, userID, userAccreds)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserAccreditations", reflect.TypeOf((*Component)(nil).UpdateUserAccreditations), ctx, realmName, userID, userAccreds, sponsor)
 }
 
 // KeycloakClient is a mock of KeycloakClient interface.
@@ -329,6 +329,21 @@ func (m *ConfigurationDBModule) GetAdminConfiguration(arg0 context.Context, arg1
 func (mr *ConfigurationDBModuleMockRecorder) GetAdminConfiguration(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdminConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).GetAdminConfiguration), arg0, arg1)
+}
+
+// GetContextKeyByID mocks base method.
+func (m *ConfigurationDBModule) GetContextKeyByID(arg0 context.Context, arg1 string) (configuration.RealmContextKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContextKeyByID", arg0, arg1)
+	ret0, _ := ret[0].(configuration.RealmContextKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContextKeyByID indicates an expected call of GetContextKeyByID.
+func (mr *ConfigurationDBModuleMockRecorder) GetContextKeyByID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextKeyByID", reflect.TypeOf((*ConfigurationDBModule)(nil).GetContextKeyByID), arg0, arg1)
 }
 
 // UserProfileCache is a mock of UserProfileCache interface.

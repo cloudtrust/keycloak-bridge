@@ -325,7 +325,7 @@ func TestUpdateUserAccreditations(t *testing.T) {
 	t.Run("Get access token - failed ", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, expectedError)
 
-		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds)
+		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -333,7 +333,7 @@ func TestUpdateUserAccreditations(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(user, expectedError)
 
-		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds)
+		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds, new("sponsor"))
 		assert.NotNil(t, err)
 	})
 
@@ -342,7 +342,7 @@ func TestUpdateUserAccreditations(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(user, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(expectedError)
 
-		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds)
+		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -352,7 +352,7 @@ func TestUpdateUserAccreditations(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds)
+		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds, nil)
 		assert.Nil(t, err)
 	})
 }
