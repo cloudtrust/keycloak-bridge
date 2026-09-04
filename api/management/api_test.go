@@ -1227,6 +1227,7 @@ func createValidContextKeyOnboarding() CtxKeyOnboardingRepresentation {
 func createValidContextKeyAccreditation() CtxKeyAccreditationRepresentation {
 	return CtxKeyAccreditationRepresentation{
 		EmailThemeRealm: new("theme-realm"),
+		Sponsors:        new("sponsors"),
 	}
 }
 
@@ -1402,12 +1403,20 @@ func TestValidateCtxKeyAccreditationRepresentation(t *testing.T) {
 		assert.Nil(t, config.Validate())
 	})
 
-	t.Run("Invalid case", func(t *testing.T) {
-		config := CtxKeyAccreditationRepresentation{
-			EmailThemeRealm: new(""),
-		}
-		assert.NotNil(t, config.Validate())
-	})
+	var cases []CtxKeyAccreditationRepresentation
+	for range 4 {
+		cases = append(cases, createValidContextKeyAccreditation())
+	}
+	cases[0].EmailThemeRealm = new("")
+	cases[1].EmailThemeRealm = new("[*****]")
+	cases[2].Sponsors = new("")
+	cases[3].Sponsors = new("[*****]")
+
+	for idx, config := range cases {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx), func(t *testing.T) {
+			assert.NotNil(t, config.Validate())
+		})
+	}
 }
 
 func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {

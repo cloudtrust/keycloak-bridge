@@ -14,6 +14,7 @@ var (
 // Attribute keys definition
 var (
 	AttrbAccreditations        = kc.AttributeKey(fields.Accreditations.AttributeName())
+	AttrbAccreditationSponsors = kc.AttributeKey(fields.AccreditationSponsors.AttributeName())
 	AttrbBirthDate             = kc.AttributeKey(fields.BirthDate.AttributeName())
 	AttrbBusinessID            = kc.AttributeKey(fields.BusinessID.AttributeName())
 	AttrbPendingChecks         = kc.AttributeKey(fields.PendingChecks.AttributeName())
