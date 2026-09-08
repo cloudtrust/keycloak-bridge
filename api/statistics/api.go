@@ -54,11 +54,11 @@ type DbConnectionRepresentation struct {
 
 // ConvertToAPIStatisticsUsers converts users statistics from KC model to API one
 func ConvertToAPIStatisticsUsers(statistics kc.StatisticsUsersRepresentation) StatisticsUsersRepresentation {
-	var statisticsAPI = StatisticsUsersRepresentation{}
+	var statisticsAPI = StatisticsUsersRepresentation{
 
-	statisticsAPI.Total = statistics.Total
-	statisticsAPI.Disabled = statistics.Disabled
-	statisticsAPI.Inactive = statistics.Inactive
+		Total:    statistics.Total,
+		Disabled: statistics.Disabled,
+		Inactive: statistics.Inactive}
 
 	return statisticsAPI
 }

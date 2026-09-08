@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	"uuid"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
@@ -18,7 +19,6 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
