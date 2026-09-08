@@ -19,6 +19,7 @@ const (
 	prmUserID       = "userID"
 	prmTxnID        = "txnID"
 	prmPendingCheck = "pendingCheck"
+	prmSponsors     = "sponsors"
 )
 
 // MakeValidationHandler make an HTTP handler for a Validation endpoint.
@@ -39,7 +40,8 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (any, error
 	}
 
 	var queryParams = map[string]string{
-		prmTxnID: constants.RegExpTxnID,
+		prmTxnID:    constants.RegExpTxnID,
+		prmSponsors: constants.RegExpName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

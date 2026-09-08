@@ -11,9 +11,9 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
 
-	"go.uber.org/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPValidationHandler(t *testing.T) {
@@ -22,7 +22,7 @@ func TestHTTPValidationHandler(t *testing.T) {
 	var mockComponent = mock.NewComponent(mockCtrl)
 
 	r := mux.NewRouter()
-	r.Handle("/validation/users/{userID}", MakeValidationHandler(keycloakb.ToGoKitEndpoint(MakeGetUserEndpoint(mockComponent)), log.NewNopLogger()))
+	r.Handle("/validation/users/{userID}", MakeValidationHandler(keycloakb.ToGoKitEndpoint(makeGetUserEndpoint(mockComponent)), log.NewNopLogger()))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
