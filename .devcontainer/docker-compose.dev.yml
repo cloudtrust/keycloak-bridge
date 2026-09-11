@@ -1,7 +1,7 @@
 services:
   bridge:
     container_name: dev-bridge
-    image: mcr.microsoft.com/devcontainers/go:2.2.2-1.26@sha256:3cdd0c250b4213e950a82aecd0d8d08a8655060163df523c2b9813a38e01faed
+    image: mcr.microsoft.com/devcontainers/go:2.3.1-1.27@sha256:17bf9e845391f8dfad8d967f203ecd66e2be1c1b67016e56292ea37001edc23f
     ports:
       - "8899:8899"
       - "8888:8888"
