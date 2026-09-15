@@ -83,6 +83,17 @@ func (a *AccreditationRepresentation) Validate() error {
 		Status()
 }
 
+// GetAccreditationNames returns a slice of accreditation names from the given slice of AccreditationRepresentation.
+func GetAccreditationNames(accreds []AccreditationRepresentation) []string {
+	var names []string
+	for _, accred := range accreds {
+		if accred.Name != nil {
+			names = append(names, *accred.Name)
+		}
+	}
+	return names
+}
+
 // ExportToKeycloak exports user details into a Keycloak UserRepresentation
 func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	var bFalse = false

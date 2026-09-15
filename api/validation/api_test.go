@@ -90,6 +90,25 @@ func TestValidateAccreditation(t *testing.T) {
 	}
 }
 
+func TestGetAccreditationNames(t *testing.T) {
+	t.Run("Nil slice", func(t *testing.T) {
+		var names = GetAccreditationNames(nil)
+		assert.Len(t, names, 0)
+	})
+	t.Run("Empty slice", func(t *testing.T) {
+		var names = GetAccreditationNames([]AccreditationRepresentation{})
+		assert.Len(t, names, 0)
+	})
+	t.Run("Success case", func(t *testing.T) {
+		var accreds = []AccreditationRepresentation{
+			{Name: new("EPR"), Validity: new("4y")},
+			{Name: new("ABC"), Validity: new("2y")},
+		}
+		var names = GetAccreditationNames(accreds)
+		assert.Equal(t, []string{"EPR", "ABC"}, names)
+	})
+}
+
 func TestExportToKeycloak(t *testing.T) {
 	t.Run("Empty user from Keycloak", func(t *testing.T) {
 		var user = createValidUser()

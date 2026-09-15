@@ -14,6 +14,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/cloudtrust/keycloak-bridge/internal/sponsorsattribute"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -215,7 +216,9 @@ func (c *component) UpdateUserAccreditations(ctx context.Context, realmName stri
 
 	kcUser.SetFieldValues(fields.Accreditations, accreditations.ToKeycloak())
 	if sponsors != nil {
-		kcUser.SetAttributeString(constants.AttrbAccreditationSponsors, *sponsors)
+		sponsorsAttr := sponsorsattribute.New(ctx, kcUser.GetAttributeString(constants.AttrbAccreditationSponsors), c.logger)
+		sponsorsAttr.SetSponsors(api.GetAccreditationNames(userAccreds), *sponsors)
+		kcUser.SetAttributeString(constants.AttrbAccreditationSponsors, sponsorsAttr.ToString(ctx))
 	}
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
