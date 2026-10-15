@@ -3,9 +3,9 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.27.1
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.22.1
+	github.com/cloudtrust/common-service/v2 v2.23.0
 	github.com/cloudtrust/httpclient v1.7.0
-	github.com/cloudtrust/kafka-client v1.11.0
+	github.com/cloudtrust/kafka-client v1.12.0
 	github.com/cloudtrust/keycloak-client/v2 v2.21.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
@@ -42,7 +42,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
-	github.com/nyaruka/phonenumbers/v2 v2.0.16 // indirect
+	github.com/nyaruka/phonenumbers/v2 v2.0.17 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.31 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
@@ -52,7 +52,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/oauth2 v0.37.0 // indirect
+	golang.org/x/oauth2 v0.38.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect

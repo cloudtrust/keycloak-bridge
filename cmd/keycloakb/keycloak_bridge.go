@@ -19,7 +19,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/database"
 	"github.com/cloudtrust/common-service/v2/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
-	csevents "github.com/cloudtrust/common-service/v2/events"
+	"github.com/cloudtrust/common-service/v2/events"
 	"github.com/cloudtrust/common-service/v2/healthcheck"
 	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/cloudtrust/common-service/v2/idgenerator"
@@ -484,6 +484,7 @@ func main() {
 			return
 		}
 		logger.Info(ctx, "msg", "Kafka configuration loaded")
+		kafkaUniverse.AddErrorLogger(kafkaLogger.Warn)
 	}
 	defer kafkaUniverse.Close()
 
@@ -594,7 +595,7 @@ func main() {
 		var validationLogger = log.With(logger, "svc", "validation")
 
 		// module to store validation events API calls
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, validationLogger)
+		auditEventsReporterModule := events.NewAuditEventReporterModule(eventProducer, "validation")
 
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, validationLogger)
@@ -630,7 +631,7 @@ func main() {
 		var tasksLogger = log.With(logger, "svc", "tasks")
 
 		// module to store validation events API calls
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, tasksLogger)
+		auditEventsReporterModule := events.NewAuditEventReporterModule(eventProducer, "tasks")
 
 		tasksComponent := tasks.NewComponent(keycloakClient, auditEventsReporterModule, tasksLogger)
 		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
@@ -678,7 +679,7 @@ func main() {
 		var managementLogger = log.With(logger, "svc", "management")
 
 		// module to store API calls of the back office to the DB
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, managementLogger)
+		auditEventsReporterModule := events.NewAuditEventReporterModule(eventProducer, "management")
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, managementLogger)
@@ -811,7 +812,7 @@ func main() {
 		var accountLogger = log.With(logger, "svc", "account")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, accountLogger)
+		auditEventsReporterModule := events.NewAuditEventReporterModule(eventProducer, "account")
 
 		// module for retrieving the custom configuration
 		var configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn, accountLogger)
@@ -886,7 +887,7 @@ func main() {
 		var registerLogger = log.With(logger, "svc", "register")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, registerLogger)
+		auditEventsReporterModule := events.NewAuditEventReporterModule(eventProducer, "register")
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, registerLogger)
@@ -939,7 +940,7 @@ func main() {
 		var kycLogger = log.With(logger, "svc", "kyc")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, kycLogger)
+		auditEventsReporterModule := events.NewAuditEventReporterModule(eventProducer, "kyc")
 
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, kycLogger)
