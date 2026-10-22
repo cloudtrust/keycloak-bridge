@@ -558,7 +558,11 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		BOExternalIDPManagementEnabled:           adminConfig.BOExternalIDPManagementEnabled,
 	}
 
-	if realmIDOverride != "" {
+	isValid, err := c.isValidOverride(ctx, currentRealm, realmIDOverride)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Error while checking if override is valid", "err", err.Error())
+		return api.Configuration{}, err
+	} else if isValid {
 		overrideConfig, err := c.configDBModule.GetConfiguration(ctx, realmIDOverride)
 		if err != nil {
 			return api.Configuration{}, err
@@ -569,6 +573,24 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 	}
 
 	return apiConfig, nil
+}
+
+func (c *component) isValidOverride(ctx context.Context, currentRealm, customerRealm string) (bool, error) {
+	if customerRealm == "" || customerRealm == currentRealm {
+		return false, nil
+	}
+	contextKeys, err := c.configDBModule.GetContextKeysForCustomerRealm(ctx, customerRealm)
+	if err != nil {
+		return false, err
+	}
+	for _, contextKey := range contextKeys {
+		if contextKey.IdentitiesRealm == currentRealm {
+			c.logger.Info(ctx, "msg", "Override of realm configuration allowed for customer realm", "identityRealm", currentRealm, "customerRealm", customerRealm)
+			return true, nil
+		}
+	}
+	c.logger.Warn(ctx, "msg", "Override of realm configuration denied for customer realm", "identityRealm", currentRealm, "customerRealm", customerRealm)
+	return false, nil
 }
 
 func (c *component) GetUserProfile(ctx context.Context) (apicommon.ProfileRepresentation, error) {
