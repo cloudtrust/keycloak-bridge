@@ -3138,6 +3138,8 @@ func TestGetRoles(t *testing.T) {
 			ContainerID: &containerID,
 			Description: &description,
 			Attributes: &map[string][]string{
+				"KEY1":               {"value1"},
+				"KEY2":               {"value2"},
 				"BUSINESS_ROLE_FLAG": {"true"},
 			},
 		}
@@ -3159,6 +3161,7 @@ func TestGetRoles(t *testing.T) {
 		assert.Equal(t, composite, *apiRoleRep.Composite)
 		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
+		assert.Len(t, apiRoleRep.Attributes, 2) // BUSINESS_ROLE_FLAG is filtered out
 	})
 
 	t.Run("NonBusinessRole are not returned", func(t *testing.T) {
@@ -3171,7 +3174,7 @@ func TestGetRoles(t *testing.T) {
 		apiRolesRep, err := managementComponent.GetRoles(ctx, "master")
 
 		assert.Nil(t, err)
-		assert.Equal(t, []api.RoleRepresentation{}, apiRolesRep)
+		assert.Len(t, apiRolesRep, 0)
 	})
 
 	t.Run("Error", func(t *testing.T) {

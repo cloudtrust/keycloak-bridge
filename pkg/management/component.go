@@ -1507,7 +1507,12 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		if c.isBusinessRole(roleKc) {
-			rolesRep = append(rolesRep, api.ConvertToAPIRole(roleKc))
+			roleRep := api.ConvertToAPIRole(roleKc)
+			if roleRep.Attributes != nil {
+				// Filter out the business role flag
+				delete(roleRep.Attributes, businessRoleFlag)
+			}
+			rolesRep = append(rolesRep, roleRep)
 		}
 	}
 
@@ -1525,7 +1530,6 @@ func (c *component) isBusinessRole(role kc.RoleRepresentation) bool {
 func (c *component) GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	var roleRep api.RoleRepresentation
 	roleKc, err := c.getBusinessRole(ctx, accessToken, realmName, roleID)
 
 	if err != nil {
@@ -1533,16 +1537,9 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 		return api.RoleRepresentation{}, err
 	}
 
-	roleRep.ID = roleKc.ID
-	roleRep.Name = roleKc.Name
-	roleRep.Composite = roleKc.Composite
-	roleRep.ClientRole = roleKc.ClientRole
-	roleRep.ContainerID = roleKc.ContainerID
-	roleRep.Description = roleKc.Description
-
+	roleRep := api.ConvertToAPIRole(roleKc)
 	// Filter out the business role flag
-	if roleKc.Attributes != nil {
-		roleRep.Attributes = *roleKc.Attributes
+	if roleRep.Attributes != nil {
 		delete(roleRep.Attributes, businessRoleFlag)
 	}
 
