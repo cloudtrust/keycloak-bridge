@@ -3373,7 +3373,7 @@ func TestUpdateRole(t *testing.T) {
 	}
 	var inputRole = api.RoleRepresentation{
 		Name: &roleName,
-		Attributes: &map[string][]string{
+		Attributes: map[string][]string{
 			"attribute": {"value"},
 		},
 	}
@@ -3724,12 +3724,10 @@ func TestGetAuthorizations(t *testing.T) {
 
 		apiAuthorizationRep, err := managementComponent.GetAuthorizations(ctx, targetRealmname, groupID)
 
-		var matrix = map[string]map[string]map[string]struct{}{
-			"action": {},
-		}
-
 		var expectedAPIAuthorization = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
+			Matrix: map[string]map[string]map[string]struct{}{
+				"action": {},
+			},
 		}
 
 		assert.Nil(t, err)
@@ -3785,12 +3783,11 @@ func TestUpdateAuthorizations(t *testing.T) {
 	var groups = []kc.GroupRepresentation{group}
 
 	var action = "MGMT_action"
-	var matrix = map[string]map[string]map[string]struct{}{
-		action: {},
-	}
 
 	var apiAuthorizations = api.AuthorizationsRepresentation{
-		Matrix: &matrix,
+		Matrix: map[string]map[string]map[string]struct{}{
+			action: {},
+		},
 	}
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -3927,7 +3924,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 		}
 
 		var apiAuthorizations = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
+			Matrix: matrix,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -3984,7 +3981,7 @@ func TestAddAuthorization(t *testing.T) {
 	var matrix = map[string]map[string]map[string]struct{}{
 		action: {targetRealmName: {targetGroupName: {}}},
 	}
-	apiAuthz := api.AuthorizationsRepresentation{Matrix: &matrix}
+	apiAuthz := api.AuthorizationsRepresentation{Matrix: matrix}
 	dbAuth := configuration.Authorization{
 		RealmID:         &realmName,
 		GroupName:       &groupName,
@@ -3995,7 +3992,7 @@ func TestAddAuthorization(t *testing.T) {
 	var matrixRealm = map[string]map[string]map[string]struct{}{
 		actionRealm: {targetRealmName: {star: {}}},
 	}
-	apiAuthzRealm := api.AuthorizationsRepresentation{Matrix: &matrixRealm}
+	apiAuthzRealm := api.AuthorizationsRepresentation{Matrix: matrixRealm}
 	dbAuthRealm := configuration.Authorization{
 		RealmID:         &realmName,
 		GroupName:       &groupName,

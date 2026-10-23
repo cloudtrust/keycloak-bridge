@@ -1542,8 +1542,8 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 
 	// Filter out the business role flag
 	if roleKc.Attributes != nil {
-		roleRep.Attributes = roleKc.Attributes
-		delete(*roleRep.Attributes, businessRoleFlag)
+		roleRep.Attributes = *roleKc.Attributes
+		delete(roleRep.Attributes, businessRoleFlag)
 	}
 
 	return roleRep, nil
@@ -1554,10 +1554,9 @@ func (c *component) CreateRole(ctx context.Context, realmName string, role api.R
 
 	var roleRep = api.ConvertToKCRole(role)
 
-	attributes := map[string][]string{
+	roleRep.Attributes = &map[string][]string{
 		businessRoleFlag: {"true"},
 	}
-	roleRep.Attributes = &attributes
 
 	locationURL, err := c.keycloakClient.CreateRole(accessToken, realmName, roleRep)
 	if err != nil {
@@ -1622,7 +1621,7 @@ func (c *component) UpdateRole(ctx context.Context, realmName string, roleID str
 	// We update the attributes but keep the business role flag
 	businessRoleFlagValue := (*kcRole.Attributes)[businessRoleFlag]
 	if role.Attributes != nil {
-		kcRole.Attributes = role.Attributes
+		kcRole.Attributes = &role.Attributes
 	} else {
 		kcRole.Attributes = &map[string][]string{}
 	}
