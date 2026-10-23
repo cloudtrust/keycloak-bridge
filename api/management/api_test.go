@@ -362,6 +362,10 @@ func TestConvertAPIRole(t *testing.T) {
 		Description: &description,
 		ID:          &id,
 		Name:        &name,
+		Attributes: &map[string][]string{
+			"KEY1":               {"value1"},
+			"BUSINESS_ROLE_FLAG": {"true"},
+		},
 	}
 
 	apiRole := ConvertToAPIRole(kcRole)
@@ -369,8 +373,11 @@ func TestConvertAPIRole(t *testing.T) {
 	assert.Equal(t, f, *apiRole.ClientRole)
 	assert.Equal(t, f, *apiRole.Composite)
 	assert.Equal(t, containerID, *apiRole.ContainerID)
+	assert.Equal(t, description, *apiRole.Description)
 	assert.Equal(t, id, *apiRole.ID)
 	assert.Equal(t, name, *apiRole.Name)
+	assert.NotNil(t, apiRole.Attributes)
+	assert.Equal(t, "value1", apiRole.Attributes["KEY1"][0])
 }
 
 func TestConvertToKCRole(t *testing.T) {
@@ -425,7 +432,7 @@ func TestConvertToDBAuthorizations(t *testing.T) {
 		}
 
 		var apiAuthorizations = AuthorizationsRepresentation{
-			Matrix: &matrix,
+			Matrix: matrix,
 		}
 
 		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
@@ -452,7 +459,7 @@ func TestConvertToDBAuthorizations(t *testing.T) {
 		}
 
 		var apiAuthorizations = AuthorizationsRepresentation{
-			Matrix: &matrix,
+			Matrix: matrix,
 		}
 
 		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
@@ -496,7 +503,7 @@ func TestConvertToAPIAuthorizations(t *testing.T) {
 	authorizations = append(authorizations, authz3)
 
 	var apiAuthorizations = ConvertToAPIAuthorizations(authorizations)
-	var matrix = *apiAuthorizations.Matrix
+	var matrix = apiAuthorizations.Matrix
 
 	_, ok := matrix[action][master][groupName1]
 	assert.Equal(t, true, ok)
