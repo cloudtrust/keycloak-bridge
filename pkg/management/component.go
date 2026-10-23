@@ -1507,7 +1507,12 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		if c.isBusinessRole(roleKc) {
-			rolesRep = append(rolesRep, api.ConvertToAPIRole(roleKc))
+			roleRep := api.ConvertToAPIRole(roleKc)
+			if roleRep.Attributes != nil {
+				// Filter out the business role flag
+				delete(roleRep.Attributes, businessRoleFlag)
+			}
+			rolesRep = append(rolesRep, roleRep)
 		}
 	}
 

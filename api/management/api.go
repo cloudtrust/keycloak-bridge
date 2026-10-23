@@ -687,6 +687,9 @@ func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
 	roleRep.ClientRole = role.ClientRole
 	roleRep.ContainerID = role.ContainerID
 	roleRep.Description = role.Description
+	if role.Attributes != nil {
+		roleRep.Attributes = *role.Attributes
+	}
 	return roleRep
 }
 
