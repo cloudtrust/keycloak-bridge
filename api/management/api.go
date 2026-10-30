@@ -205,13 +205,13 @@ type AttackDetectionStatusRepresentation struct {
 
 // RoleRepresentation struct
 type RoleRepresentation struct {
-	ClientRole  *bool                `json:"clientRole,omitempty"`
-	Composite   *bool                `json:"composite,omitempty"`
-	ContainerID *string              `json:"containerId,omitempty"`
-	Description *string              `json:"description,omitempty"`
-	ID          *string              `json:"id,omitempty"`
-	Name        *string              `json:"name,omitempty"`
-	Attributes  *map[string][]string `json:"attributes,omitempty"`
+	ClientRole  *bool               `json:"clientRole,omitempty"`
+	Composite   *bool               `json:"composite,omitempty"`
+	ContainerID *string             `json:"containerId,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	ID          *string             `json:"id,omitempty"`
+	Name        *string             `json:"name,omitempty"`
+	Attributes  map[string][]string `json:"attributes,omitempty"`
 }
 
 // GroupRepresentation struct
@@ -222,7 +222,7 @@ type GroupRepresentation struct {
 
 // AuthorizationsRepresentation struct
 type AuthorizationsRepresentation struct {
-	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
+	Matrix map[string]map[string]map[string]struct{} `json:"matrix"`
 }
 
 // AuthorizationMessage struct
@@ -687,6 +687,9 @@ func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
 	roleRep.ClientRole = role.ClientRole
 	roleRep.ContainerID = role.ContainerID
 	roleRep.Description = role.Description
+	if role.Attributes != nil {
+		roleRep.Attributes = *role.Attributes
+	}
 	return roleRep
 }
 
@@ -736,7 +739,7 @@ func ConvertToAPIAuthorizations(authorizations []configuration.Authorization) Au
 	}
 
 	return AuthorizationsRepresentation{
-		Matrix: &matrix,
+		Matrix: matrix,
 	}
 
 }
@@ -749,7 +752,7 @@ func ConvertToDBAuthorizations(realmID, groupName string, apiAuthorizations Auth
 		return authorizations
 	}
 
-	for action, u := range *apiAuthorizations.Matrix {
+	for action, u := range apiAuthorizations.Matrix {
 		if len(u) == 0 {
 			var act = string(action)
 			authorizations = append(authorizations, configuration.Authorization{
