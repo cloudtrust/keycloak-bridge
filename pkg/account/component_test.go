@@ -985,6 +985,7 @@ func TestGetConfiguration(t *testing.T) {
 	var falseBool = false
 	var trueBool = true
 	var identificationUrl = "identification.url.com"
+	var sponsorIdentifcationUrls = map[string]string{"realm1": "url1", "realm2": "url2"}
 	var config = configuration.RealmConfiguration{
 		APISelfAuthenticatorDeletionEnabled:     &falseBool,
 		APISelfAccountEditingEnabled:            &falseBool,
@@ -1004,6 +1005,7 @@ func TestGetConfiguration(t *testing.T) {
 		OnboardingUserEditingEnabled:            &falseBool,
 		APISelfInitialPasswordDefinitionAllowed: &falseBool,
 		IdentificationURL:                       &identificationUrl,
+		SponsorIdentificationURLs:               sponsorIdentifcationUrls,
 	}
 	var adminConfig = configuration.RealmAdminConfiguration{
 		AvailableChecks:                          map[string]bool{"IDNow": false, "physical-check": true},

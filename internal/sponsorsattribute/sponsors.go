@@ -26,6 +26,10 @@ func New(ctx context.Context, value *string, logger log.Logger) SponsorsAttribut
 	return attr
 }
 
+func (sa *SponsorsAttribute) GetSponsor(accred string) string {
+	return sa.value[accred]
+}
+
 func (sa *SponsorsAttribute) SetSponsors(accreds []string, sponsors string) {
 	for _, accred := range accreds {
 		sa.value[accred] = sponsors
