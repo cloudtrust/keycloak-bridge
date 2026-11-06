@@ -88,7 +88,7 @@ func TestDeny(t *testing.T) {
 	}
 
 	var authz = api.AuthorizationsRepresentation{
-		Matrix: &authzMatrix,
+		Matrix: authzMatrix,
 	}
 
 	var password = api.PasswordRepresentation{
@@ -271,7 +271,7 @@ func TestAllowed(t *testing.T) {
 	}
 
 	var authz = api.AuthorizationsRepresentation{
-		Matrix: &authzMatrix,
+		Matrix: authzMatrix,
 	}
 
 	var password = api.PasswordRepresentation{
