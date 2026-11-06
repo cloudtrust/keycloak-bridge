@@ -17,6 +17,13 @@ paths:
       responses:
         204:
           description: successful operation
+        403:
+          description: not allowed
+components:
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
 security:
   - openId:
     - todo

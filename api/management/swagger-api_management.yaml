@@ -5,7 +5,7 @@ info:
   description: 'Management API for Cloudtrust'
   version: 1.0.0
 servers:
-- url: http://localhost:8888/management
+- url: http://localhost:8877/management
 tags:
 - name: Realms
   description: Realms management
@@ -30,6 +30,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Actions'
+  /realms:
+    get:
+      tags:
+      - Realms
+      summary: Get the list of all realms
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Realm'
   /realms/{realm}:
     get:
       tags:
@@ -176,7 +190,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              allOf:
+              - $ref: '#/components/schemas/User'
+              - type: object
+                required:
+                - groups
       responses:
         201:
           description: successful operation
@@ -185,6 +203,8 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+        400:
+          description: invalid body or missing groups
     get:
       tags:
       - Users
@@ -238,12 +258,12 @@ paths:
       - name: first
         in: query
         schema:
-          type: number
+          type: integer
         allowEmptyValue: true
       - name: max
         in: query
         schema:
-          type: number
+          type: integer
         allowEmptyValue: true
       responses:
         200:
@@ -311,6 +331,8 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid body
     delete:
       tags:
       - Users
@@ -507,7 +529,7 @@ paths:
       responses:
         204:
           description: successful operation
-        404:
+        400:
           description: role not found or not owned by user
   /realms/{realm}/users/{userID}/groups:
     get:
@@ -648,6 +670,8 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid body or unknown trustID group
   /realms/{realm}/users/{userID}/checks:
     get:
       tags:
@@ -741,6 +765,8 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid body
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}/roles/{roleID}:
     delete:
       tags:
@@ -810,11 +836,15 @@ paths:
               $ref: '#/components/schemas/Password'
       responses:
         200:
-          description: successful operation
+          description: >
+            successful operation. If a password was generated, it is returned as a JSON string.
+            If a password was provided in the body, the response body is empty.
           content:
-            text/plain:
+            application/json:
               schema:
                 type: string
+        400:
+          description: invalid body or password
   /realms/{realm}/users/{userID}/execute-actions-email:
     put:
       tags:
@@ -883,7 +913,11 @@ paths:
       responses:
         200:
           description: successful operation
-  /realms/{realm}/users/{userID}/revoke-accreditations:
+        400:
+          description: invalid body, required action or query parameter
+  /accreditations/realms/{realm}/users/{userID}/revoke-accreditations:
+    servers:
+    - url: http://localhost:8877
     put:
       tags:
       - Users
@@ -1011,6 +1045,8 @@ paths:
           description: Not authenticated
         403:
           description: No permission to call this operation
+        404:
+          description: Unknown context key
         409:
           description: Endpoint not configured
   /realms/{realm}/users/{userID}/reset-sms-counter:
@@ -1142,9 +1178,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AttackDetectionStatus'
+                $ref: '#/components/schemas/AttackDetectionStatus'
   /realms/{realm}/users/{userID}/clear-login-failures:
     delete:
       tags:
@@ -1185,10 +1219,10 @@ paths:
         schema:
           type: string
       responses:
-        201:
-          description: successful operation
+        200:
+          description: successful operation. The recovery code is returned as a JSON string.
           content:
-            text/plain:
+            application/json:
               schema:
                 type: string
         409:
@@ -1212,10 +1246,10 @@ paths:
         schema:
           type: string
       responses:
-        201:
-          description: successful operation
+        200:
+          description: successful operation. The activation code is returned as a JSON string.
           content:
-            text/plain:
+            application/json:
               schema:
                 type: string
   /realms/{realm}/roles:
@@ -1263,6 +1297,8 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+        400:
+          description: invalid body
   /realms/{realm}/roles/{roleID}:
     get:
       tags:
@@ -1313,6 +1349,8 @@ paths:
       responses:
         204:
           description: successful operation
+        400:
+          description: invalid body
     delete:
       tags:
       - Roles
@@ -1415,6 +1453,8 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+        400:
+          description: invalid body
   /realms/{realm}/clients/{clientID}/roles/{roleID}:
     delete:
       tags:
@@ -1489,6 +1529,8 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+        400:
+          description: invalid body
   /realms/{realm}/groups/{groupID}:
     delete:
       tags:
@@ -1556,10 +1598,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Authorizations'    
+              $ref: '#/components/schemas/Authorizations'
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid body or authorization
   /realms/{realm}/groups/{groupID}/actions/{action}/authorizations:
     get:
       tags:
@@ -1651,7 +1695,10 @@ paths:
     put:
       tags:
       - Groups
-      summary: Add an authorization to the group with a partial matrix
+      summary: Add authorizations to the group with a partial matrix
+      description: >
+        The authorizations added are entirely driven by the body matrix (action -> target realm -> target group).
+        The {action} path parameter is NOT used by this operation; the actions are taken from the keys of the matrix.
       parameters:
       - name: realm
         in: path
@@ -1667,7 +1714,7 @@ paths:
           type: string
       - name: action
         in: path
-        description: action
+        description: action. Ignored by this operation (the actions are read from the body matrix keys).
         required: true
         schema:
           type: string
@@ -1675,13 +1722,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PartialAuthorizations'    
+              $ref: '#/components/schemas/PartialAuthorizations'
       responses:
         200:
           description: successful operation
         400:
           description: invalid information provided
-  /realms/{realm}/profile:
+  /realms/{realm}/users/profile:
     get:
       tags:
       - Configuration
@@ -1853,6 +1900,8 @@ paths:
           description: invalid information provided
   /realms/{realm}/context-keys:
     get:
+      tags:
+      - Configuration
       summary: Get the context keys
       description: Returns the list of context keys for a given realm
       parameters:
@@ -1876,6 +1925,8 @@ paths:
         403:
           description: forbidden access
     post:
+      tags:
+      - Configuration
       summary: Create or update a set of context-keys
       description: Define the context keys for the given customer
       parameters:
@@ -1894,8 +1945,8 @@ paths:
               items:
                 $ref: '#/components/schemas/RealmContextKeyRepresentation'
       responses:
-        201:
-          description: successful operation  
+        204:
+          description: successful operation
         400:
           description: invalid information provided
         401:
@@ -1960,7 +2011,9 @@ paths:
               $ref: '#/components/schemas/FederatedIdentity'
       responses:
         200:
-          description: successful operation  
+          description: successful operation
+        400:
+          description: invalid body
     delete:
       tags:
       - Brokering
@@ -2052,11 +2105,12 @@ paths:
       tags:
       - Configuration
       summary: >
-        Update the theme configuration for the Backoffice
+        Update the theme configuration for the Backoffice.
+        The theme configuration of the realm given in the path is always the one updated.
       parameters:
       - name: realm
         in: path
-        description: realm name (not id!)
+        description: realm name (not id!). This is the realm whose theme configuration is updated.
         required: true
         schema:
           type: string
@@ -2067,11 +2121,9 @@ paths:
               $ref: '#/components/schemas/ThemeConfiguration'
       responses:
         200:
-          description: Theme Configuration
-          content:
-            application/json:
-              schema:
-                
+          description: successful operation (empty body)
+        400:
+          description: invalid body (e.g. missing realmName or settings, invalid color, menu theme, font family, image or translations)
   /realms/{realm}/theme-translation/{language}:
     get:
       tags:
@@ -2106,8 +2158,8 @@ paths:
       tags:
       - Users
       summary: >
-        Create a new user in the social realm
-        Username must be unique.
+        Create a new user in the social realm.
+        The username is always generated (any provided username is ignored) and terms of use are always required.
         Role and Groups can be assigned thanks to their ID.
       parameters:
       - name: generateNameID
@@ -2120,7 +2172,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              allOf:
+              - $ref: '#/components/schemas/User'
+              - type: object
+                required:
+                - groups
       responses:
         201:
           description: successful operation
@@ -2129,6 +2185,10 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+        400:
+          description: invalid body or missing groups
+        409:
+          description: a user with the same email already exists in the social realm
   /social/users/{userID}/send-onboarding-email:
     post:
       tags:
@@ -2323,10 +2383,12 @@ components:
         createdTimestamp:
           type: integer
           format: int64
-        onBoardingStatus:
+        onboardingStatus:
           type: string
           enum: ["", self-registration-form-completed, user-created-by-api, email-verified, password-set, phone-verified, 2fa-set, completed]
           description: user onboarding flow status
+      additionalProperties:
+        description: Dynamic attributes defined by the realm user profile are also serialized as top-level fields.
     UserCheck:
       type: object
       properties:
@@ -2402,9 +2464,9 @@ components:
         description:
           type: string
         clientRole:
-          type: string
+          type: boolean
         composite:
-          type: string
+          type: boolean
         containerId:
           type: string
         attributes:
@@ -2459,28 +2521,31 @@ components:
           type: string
         type:
           type: string
-        algorithm:
+        userLabel:
           type: string
         createdDate:
           type: integer
           format: int64
-        config:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
+        credentialData:
+          type: string
+          description: credential data as a JSON-encoded string
+        value:
+          type: string
+        temporary:
+          type: boolean
     AttackDetectionStatus:
       type: object
       properties:
         numFailures:
           type: integer
+          format: int64
         disabled:
           type: boolean
         lastIPFailure:
           type: string
         lastFailure:
           type: integer
+          format: int64
     Configuration:
       type: object
       properties:
@@ -2497,6 +2562,8 @@ components:
         api_self_account_deletion_enabled:
           type: boolean
         api_self_idplinks_management_enabled:
+          type: boolean
+        api_self_initial_password_definition_allowed:
           type: boolean
         show_authenticators_tab:
           type: boolean
@@ -2525,15 +2592,22 @@ components:
         barcode_type:
           type: string
           enum: [CODE128]
-        allowed_back_url:
-          type: string
+        allowed_back_urls:
+          type: array
+          items:
+            type: string
         onboarding_user_editing_enabled:
           type: boolean
+        identification_url:
+          type: string
     AdminConfiguration:
       type: object
+      required:
+      - mode
       properties:
         mode:
           type: string
+          enum: [trustID, corporate]
         available_checks:
           type: object
           additionalProperties:
@@ -2544,6 +2618,10 @@ components:
           type: boolean
         consent_required_corporate:
           type: boolean
+        consent_required_corporate_auxiliary:
+          type: boolean
+        accreditation_renewal_window_days:
+          type: integer
         bo_theme:
           type: string
         sse_theme:
@@ -2555,7 +2633,9 @@ components:
         need_verified_contact:
           type: boolean
           description: if true, email and phone number have to be verified to allow validation of the account in KYC
-        video_identification_voucher_enabled: 
+        need_verified_contact_auxiliary:
+          type: boolean
+        video_identification_voucher_enabled:
           type: boolean
         video_identification_accounting_enabled:
           type: boolean
@@ -2589,6 +2669,12 @@ components:
           type: array
           items:
             type: string
+        auxiliary_physical_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        voucher_abuse_counter_button_enabled:
+          type: boolean
         onboarding_status_enabled:
           type: boolean
         auto_generated_username_enabled:
@@ -2597,18 +2683,32 @@ components:
           type: boolean
         register_mode:
           type: string
+          enum: [default, advanced, form]
+        bo_external_idp_management_enabled:
+          type: boolean
     BackOfficeConfiguration:
       type: object
+      description: map of target realm -> user type (customers or teams) -> list of allowed group names
       additionalProperties:
         type: object
-        items:
-          type: object
-          additionalProperties:
+        properties:
+          customers:
             type: array
             items:
               type: string
+          teams:
+            type: array
+            items:
+              type: string
+        additionalProperties: false
     RealmContextKeyRepresentation:
       type: object
+      description: id, label, identitiesRealm and config are mandatory when setting context keys
+      required:
+      - id
+      - label
+      - identitiesRealm
+      - config
       properties:
         id:
           type: string
@@ -2632,6 +2732,8 @@ components:
           $ref: '#/components/schemas/CtxKeyAccreditationRepresentation'
         autovoucher:
           $ref: '#/components/schemas/CtxKeyAutoVoucherRepresentation'
+        idnow:
+          $ref: '#/components/schemas/CtxKeyIDNowRepresentation'
     CtxKeyOnboardingRepresentation:
       type: object
       properties:
@@ -2640,8 +2742,8 @@ components:
         redirectUri:
           type: string
           format: uri
-        redirectMode:
-          type: string
+        isRedirectMode:
+          type: boolean
     CtxKeyAccreditationRepresentation:
       type: object
       properties:
@@ -2660,6 +2762,11 @@ components:
           type: string
         billedRealm:
           type: string
+    CtxKeyIDNowRepresentation:
+      type: object
+      properties:
+        desktopRedirectUri:
+          type: string
     FederatedIdentity:
       type: object
       properties:
@@ -2673,32 +2780,36 @@ components:
     IdentityProvider:
       type: object
       properties:
-          AddReadTokenRoleOnCreate: 
-            type: boolean
-          Alias: 
+        addReadTokenRoleOnCreate:
+          type: boolean
+        alias:
+          type: string
+        authenticateByDefault:
+          type: boolean
+        config:
+          type: object
+          additionalProperties:
             type: string
-          AuthenticateByDefault: 
-            type: boolean
-          Config:
-            type: object
-          DisplayName:
-            type: string
-          Enabled:
-            type: boolean
-          FirstBrokerLoginFlowAlias:
-            type: string
-          InternalID:
-            type: string
-          LinkOnly:
-            type: boolean
-          PostBrokerLoginFlowAlias:
-            type: string
-          ProviderID:
-            type: string
-          StoreToken:
-            type: boolean
-          TrustEmail:
-            type: boolean
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        firstBrokerLoginFlowAlias:
+          type: string
+        hideOnLogin:
+          type: boolean
+        internalId:
+          type: string
+        linkOnly:
+          type: boolean
+        postBrokerLoginFlowAlias:
+          type: string
+        providerId:
+          type: string
+        storeToken:
+          type: boolean
+        trustEmail:
+          type: boolean
     Profile:
       type: object
       properties:
@@ -2723,8 +2834,14 @@ components:
           description: name of a group defined in ProfileGroup
         required:
           type: boolean
+        readOnly:
+          type: boolean
         validations:
           $ref: '#/components/schemas/ProfileAttributeValidations'
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
     ProfileAttributeValidations:
       description: >
         Here is a list of known validators :
@@ -2760,53 +2877,44 @@ components:
             type: string
     ThemeConfiguration:
       type: object
+      required:
+      - realmName
+      - settings
       properties:
         realmName:
           type: string
-          description: Name of the theme to use
-          required: true
+          description: >
+            Realm name. Mandatory and validated as a realm name, but ignored for storage:
+            the realm given in the path is always the one updated.
         settings:
           type: object
+          description: Mandatory. A missing settings object returns HTTP 400.
           properties:
             color:
               type: string
               description: Hex color code (e.g. \#FFFFFF)
-              required: true
             menuTheme:
               type: string
-              description: Name of the menu theme to use (either 'light', 'dark' or 'primary')
-              required: true
+              enum: [light, dark, primary]
+              description: Name of the menu theme to use
             fontFamily:
               type: string
-              description: Font family to use for the theme (either 'lato' or 'roboto')
-              required: false
+              enum: [Lato, Roboto]
+              description: Font family to use for the theme
         logo:
           type: string
-          description: logo image in base64 format
-          required: false
+          format: byte
+          description: logo image (JPEG, PNG or SVG, 1 KB to 5 MB) in base64 format
         favicon:
           type: string
-          description: svg favicon image in base64 format
-          required: false
+          format: byte
+          description: SVG favicon image (1 KB to 1 MB) in base64 format
         translations:
           type: object
-          properties:
-            en:
-              type: string
-              description: English translation file in JSON format
-              required: false
-            fr:
-              type: string
-              description: French translation file in JSON format
-              required: false
-            it:
-              type: string
-              description: Italian translation file in JSON format
-              required: false
-            de:
-              type: string
-              description: German translation file in JSON format
-              required: false
+          description: >
+            Translations, usually keyed by language code (e.g. en, fr, it, de). Any JSON object is accepted
+            as long as all its leaf values are strings (nested objects are allowed).
+          additionalProperties: true
   securitySchemes:
     openId:
       type: openIdConnect
