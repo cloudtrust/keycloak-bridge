@@ -18,6 +18,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/cloudtrust/keycloak-bridge/internal/sponsorsattribute"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -497,7 +498,8 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 }
 
 func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+	currentRealm := ctx.Value(cs.CtContextRealm).(string)
+	accessToken := ctx.Value(cs.CtContextAccessToken).(string)
 
 	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
 	if err != nil {
@@ -528,6 +530,24 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		allowedBackURLs = config.AllowedBackURLs
 	}
 
+	account, err := c.keycloakAccountClient.GetAccount(accessToken, currentRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get Keycloak account", "err", err.Error(), "realm", currentRealm)
+		return api.Configuration{}, err
+	}
+
+	// Get the identification URL based on the user's highest priority sponsor
+	identificationURL := config.IdentificationURL
+	if accreditationSponsors := account.GetAttributeString(constants.AttrbAccreditationSponsors); accreditationSponsors != nil {
+		sponsorsAttribute := sponsorsattribute.New(ctx, accreditationSponsors, c.logger)
+		highestSponsor := getHighestPrioritySponsor(&sponsorsAttribute)
+		if highestSponsor != "" {
+			if url, ok := config.SponsorIdentificationURLs[highestSponsor]; ok {
+				identificationURL = &url
+			}
+		}
+	}
+
 	var apiConfig = api.Configuration{
 		EditingEnabled:                           config.APISelfAccountEditingEnabled,
 		ShowAuthenticatorsTab:                    config.ShowAuthenticatorsTab,
@@ -554,7 +574,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		AllowedBackURLs:                          allowedBackURLs,
 		OnboardingUserEditingEnabled:             config.OnboardingUserEditingEnabled,
 		AllowInitialPasswordDefinition:           config.APISelfInitialPasswordDefinitionAllowed,
-		IdentificationURL:                        config.IdentificationURL,
+		IdentificationURL:                        identificationURL,
 		BOExternalIDPManagementEnabled:           adminConfig.BOExternalIDPManagementEnabled,
 	}
 
@@ -569,6 +589,18 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 	}
 
 	return apiConfig, nil
+}
+
+// getHighestPrioritySponsor returns the sponsor with the highest priority based on an hardcoded predefined order: DEP > AUTO > BASIC.
+func getHighestPrioritySponsor(sa *sponsorsattribute.SponsorsAttribute) string {
+	accredsInPriorityOrder := []string{"DEP", "AUTO", "BASIC"}
+	for _, accred := range accredsInPriorityOrder {
+		sponsor, ok := sa.GetSponsor(accred)
+		if ok {
+			return sponsor
+		}
+	}
+	return ""
 }
 
 func (c *component) GetUserProfile(ctx context.Context) (apicommon.ProfileRepresentation, error) {
