@@ -606,7 +606,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.Len(t, res.AllowedBackURLs, 0)
 		assert.False(t, *res.OnboardingUserEditingEnabled)
 		assert.Nil(t, res.IdentificationURL)
-		assert.Nil(t, res.SponsorIdentificationURLs)
+		assert.Len(t, res.SponsorIdentificationURLs, 0)
 	})
 	t.Run("Non empty struct", func(t *testing.T) {
 		var bTrue = true
