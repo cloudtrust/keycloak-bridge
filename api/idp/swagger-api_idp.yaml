@@ -4,7 +4,7 @@ info:
   description: 'Identity Providers API for Cloudtrust'
   version: 1.0.0
 servers:
-- url: http://localhost:8888/idp
+- url: http://localhost:8888
 paths:
   /idp/realms/{realm}/identity-providers:
     post:
@@ -26,6 +26,8 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid body content
   /idp/realms/{realm}/identity-providers/{provider}:
     get:
       tags:
@@ -46,7 +48,7 @@ paths:
           type: string
       responses:
         200:
-          description: successful operation
+          description: successful operation (hrdSettings is not returned)
           content:
             application/json:
               schema:
@@ -78,6 +80,8 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid body content
         404:
           description: provider not found
     delete:
@@ -129,6 +133,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/IdentityProviderMapperRepresentation'
+        404:
+          description: provider not found
     post:
       tags:
       - Identity providers
@@ -154,7 +160,11 @@ paths:
       responses:
         200:
           description: successful operation
-  /idp/realms/{realm}/identity-providers/{provider}/mappers/{id}:
+        400:
+          description: invalid body content
+        404:
+          description: provider not found
+  /idp/realms/{realm}/identity-providers/{provider}/mappers/{mapper}:
     put:
       tags:
       - Identity providers
@@ -172,7 +182,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: id
+      - name: mapper
         in: path
         description: ID of the mapper
         required: true
@@ -186,6 +196,8 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid body content
         404:
           description: mapper not found
     delete:
@@ -205,7 +217,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: id
+      - name: mapper
         in: path
         description: ID of the mapper
         required: true
@@ -220,7 +232,9 @@ paths:
     get:
       tags:
       - Identity providers
-      summary: Search users having a given attribute set to a given value or having a given username
+      summary: >
+        Search users having a given attribute set to a given value, being member of a given group and/or having a given username.
+        At least one of username, groupName or attributeKey/attributeValue must be provided.
       parameters:
       - name: realm
         in: path
@@ -230,13 +244,13 @@ paths:
           type: string
       - name: username
         in: query
-        description: username of the user. Parameter is required if groupName is not provided
+        description: username of the user. At least one of username, groupName or attributeKey/attributeValue is required
         required: false
         schema:
           type: string
       - name: groupName
         in: query
-        description: name of a group in which searched users are linked to. Parameter is required if username is not provided
+        description: name of a group in which searched users are linked to. At least one of username, groupName or attributeKey/attributeValue is required
         required: false
         schema:
           type: string
@@ -260,13 +274,15 @@ paths:
           type: boolean
       responses:
         200:
-          description: successful operation
+          description: successful operation. Returns an empty array when no user matches
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        404:
-          description: user not found
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        400:
+          description: invalid or missing parameter, or unknown group
   /idp/realms/{realm}/users/{user}:
     get:
       tags:
@@ -297,11 +313,9 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/User'
         400:
-          description: invalid or missing parameter
+          description: invalid or missing parameter, or user is not in the given group
         404:
           description: user not found
     delete:
@@ -330,6 +344,8 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: unknown group, or user is not in the given group
         404:
           description: user not found
   /idp/realms/{realm}/users/{user}/attributes:
@@ -362,12 +378,14 @@ paths:
       responses:
         204:
           description: successful operation
+        400:
+          description: invalid body content
         404:
           description: user not found
     delete:
       tags:
       - Identity provider users
-      summary: Delete a user
+      summary: Delete user attributes
       parameters:
       - name: realm
         in: path
@@ -391,6 +409,8 @@ paths:
       responses:
         204:
           description: successful operation
+        400:
+          description: invalid body content
         404:
           description: user not found
   /idp/realms/{realm}/users/{user}/federated-identities:
@@ -413,92 +433,123 @@ paths:
           type: string
       responses:
         200:
-          description: successful operation
+          description: successful operation. Body is null when the user has no federated identity
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: true
+                items:
+                  $ref: '#/components/schemas/FederatedIdentityRepresentation'
         404:
           description: user not found
-    /idp/realms/{realm}/users/{user}/federated-identities/{provider}:
-      delete:
-        tags:
-        - Identity providers
-        summary: Remove a federated identity link from a user
-        parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: provider
-          in: path
-          description: Login provider id
-          required: true
-          schema:
-            type: string        
-        responses:
-          200:
-            description: successful operation
+  /idp/realms/{realm}/users/{user}/federated-identities/{provider}:
+    delete:
+      tags:
+      - Identity providers
+      summary: Remove a federated identity link from a user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: user
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: Login provider id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
 components:
   schemas:
     IdentityProviderRepresentation:
       type: object
+      required: [alias, displayName, firstBrokerLoginFlowAlias, postBrokerLoginFlowAlias, providerId]
       properties:
-          AddReadTokenRoleOnCreate: 
+          addReadTokenRoleOnCreate:
             type: boolean
-          Alias: 
+          alias:
             type: string
-          AuthenticateByDefault: 
+          authenticateByDefault:
             type: boolean
-          Config:
+          config:
             type: object
-          DisplayName:
+            description: serialized JSON of the config must not exceed 10000 characters
+            additionalProperties:
+              type: string
+          displayName:
             type: string
-          Enabled:
+          enabled:
             type: boolean
-          FirstBrokerLoginFlowAlias:
+          firstBrokerLoginFlowAlias:
             type: string
-          InternalID:
-            type: string
-          LinkOnly:
+          hideOnLogin:
             type: boolean
-          PostBrokerLoginFlowAlias:
+          internalId:
             type: string
-          ProviderID:
+          linkOnly:
+            type: boolean
+          postBrokerLoginFlowAlias:
             type: string
-          StoreToken:
+          providerId:
+            type: string
+          storeToken:
             type: boolean
-          TrustEmail:
+          trustEmail:
             type: boolean
-          HrdSettings:
-            type: object
-            $ref: '#/components/schemas/HrdSettingModel'
+          hrdSettings:
+            description: Write-only. Taken into account by POST/PUT, never returned by GET
+            writeOnly: true
+            allOf:
+              - $ref: '#/components/schemas/HrdSettingModel'
     HrdSettingModel:
       type: object
+      required: [priority]
       properties:
-          IPRangesList: 
+          ipRangesList:
             type: string
-          DomainsList:
+          domainsList:
             type: string
-          Priority: 
+          priority:
             type: integer
+            minimum: -1000
+            maximum: 1000
     IdentityProviderMapperRepresentation:
       type: object
+      required: [identityProviderAlias, identityProviderMapper, name]
       properties:
-          Config:
+          config:
             type: object
-          ID: 
+            description: serialized JSON of the config must not exceed 10000 characters
+            additionalProperties:
+              type: string
+          id:
             type: string
-          IdentityProviderAlias: 
+          identityProviderAlias:
             type: string
-          IdentityProviderMapper: 
+          identityProviderMapper:
             type: string
-          Name:
+          name:
             type: string
+    FederatedIdentityRepresentation:
+      type: object
+      properties:
+        userID:
+          type: string
+        username:
+          type: string
+        identityProvider:
+          type: string
     User:
       type: object
       properties:

@@ -174,15 +174,20 @@ func createTestAPIFedIdentities() []api.FederatedIdentityRepresentation {
 	return []api.FederatedIdentityRepresentation{apiFedIdentity1, apiFedIdentity2}
 }
 
-func TestOverrideKeycloakError(t *testing.T) {
+func TestHandleKeycloakError(t *testing.T) {
 	var notAKeycloakError = errors.New("not a keycloak error")
 
-	assert.NoError(t, overrideKeycloakError(nil, "idp"))
-	assert.Equal(t, notAKeycloakError, overrideKeycloakError(notAKeycloakError, "idp"))
-	assert.IsType(t, kc.HTTPError{}, overrideKeycloakError(kc.HTTPError{HTTPStatus: http.StatusTeapot}, "idp"))
-	assert.IsType(t, errorhandler.Error{}, overrideKeycloakError(kc.HTTPError{HTTPStatus: http.StatusNotFound}, "idp"))
-	assert.IsType(t, kc.ClientDetailedError{}, overrideKeycloakError(kc.ClientDetailedError{HTTPStatus: http.StatusTeapot}, "idp"))
-	assert.IsType(t, errorhandler.Error{}, overrideKeycloakError(kc.ClientDetailedError{HTTPStatus: http.StatusBadRequest}, "idp"))
+	assert.NoError(t, handleKeycloakError(nil, "idp"))
+	assert.Equal(t, notAKeycloakError, handleKeycloakError(notAKeycloakError, "idp"))
+	assert.IsType(t, kc.HTTPError{}, handleKeycloakError(kc.HTTPError{HTTPStatus: http.StatusTeapot}, "idp"))
+	assert.IsType(t, errorhandler.Error{}, handleKeycloakError(kc.HTTPError{HTTPStatus: http.StatusNotFound}, "idp"))
+	assert.IsType(t, kc.ClientDetailedError{}, handleKeycloakError(kc.ClientDetailedError{HTTPStatus: http.StatusTeapot}, "idp"))
+	assert.IsType(t, errorhandler.Error{}, handleKeycloakError(kc.ClientDetailedError{HTTPStatus: http.StatusBadRequest}, "idp"))
+
+	// Keycloak errors which are not converted must not be swallowed
+	assert.NoError(t, handleKeycloakError(nil, "idp"))
+	assert.Equal(t, kc.HTTPError{HTTPStatus: http.StatusForbidden}, handleKeycloakError(kc.HTTPError{HTTPStatus: http.StatusForbidden}, "idp"))
+	assert.Equal(t, kc.ClientDetailedError{HTTPStatus: http.StatusInternalServerError}, handleKeycloakError(kc.ClientDetailedError{HTTPStatus: http.StatusInternalServerError}, "idp"))
 }
 
 func TestGetIdentityProvider(t *testing.T) {

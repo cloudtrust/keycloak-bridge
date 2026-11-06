@@ -11,21 +11,7 @@ tags:
 - name: SMS
   description: Send SMS
 paths:
-  /actions:
-    get:
-      tags:
-      - Actions
-      summary: Get the list of all possible actions
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Actions'
-  /realms/{realm}/users/{userID}/send-mail:
+  /realms/{realm}/users/{userID}/send-email:
     post:
       tags:
       - Email
@@ -51,6 +37,8 @@ paths:
       responses:
         204:
           description: successful operation
+        400:
+          description: invalid path parameter, invalid body or body validation failed
   /realms/{realm}/send-sms:
     post:
       tags:
@@ -71,23 +59,21 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid path parameter, invalid body or body validation failed
 
 components:
   schemas:
-    Actions:
-      type: object
-      properties:
-        name:
-          type: string
-        scope:
-          type: string
     EmailRepresentation:
       type: object
+      required: [theming]
       properties:
         recipient:
           type: string
+          description: optional email address
         theming:
           type: object
+          required: [subjectKey]
           properties:
             subjectKey:
               type: string
@@ -99,24 +85,30 @@ components:
               type: string
             templateParameters:
               type: object
+              additionalProperties:
+                type: string
             locale:
               type: string
             themeRealmName:
               type: string
         attachments:
-          type: object
-          properties:
-            filename:
-              type: string
-            contentType:
-              type: string
-            content:
-              type: string
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              contentType:
+                type: string
+              content:
+                type: string
     SMSRepresentation:
       type: object
+      required: [msisdn, theming]
       properties:
         msisdn:
           type: string
+          description: phone number
         theming:
           type: object
           properties:

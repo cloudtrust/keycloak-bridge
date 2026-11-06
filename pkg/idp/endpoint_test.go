@@ -50,9 +50,20 @@ func TestCreateIdentityProviderEndpoint(t *testing.T) {
 	idpJSON, _ := json.Marshal(idp)
 	req[reqBody] = string(idpJSON)
 
-	mocks.component.EXPECT().CreateIdentityProvider(ctx, realm, idp).Return(nil)
-	_, err := e(ctx, req)
-	assert.Nil(t, err)
+	t.Run("Success", func(t *testing.T) {
+		mocks.component.EXPECT().CreateIdentityProvider(ctx, realm, idp).Return(nil)
+		res, err := e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+
+	t.Run("Failure", func(t *testing.T) {
+		var anyError = errors.New("any-error")
+		mocks.component.EXPECT().CreateIdentityProvider(ctx, realm, idp).Return(anyError)
+		res, err := e(ctx, req)
+		assert.Equal(t, anyError, err)
+		assert.Nil(t, res)
+	})
 }
 
 func TestUpdateIdentityProviderEndpoint(t *testing.T) {

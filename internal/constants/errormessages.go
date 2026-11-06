@@ -83,6 +83,7 @@ const (
 	TrustIDGroupName                  = "trustIDGroupName"
 	AllowedBackURL                    = "allowedBackURL"
 	RealmName                         = "realmName"
+	Settings                          = "settings"
 	Color                             = "color"
 	MenuTheme                         = "menuTheme"
 	FontFamily                        = "fontFamily"
