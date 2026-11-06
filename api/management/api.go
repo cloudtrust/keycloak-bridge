@@ -855,7 +855,6 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 	}
 
 	var emptyArray = []string{}
-	var emptyMap = map[string]string{}
 	return RealmCustomConfiguration{
 		DefaultClientID:                         config.DefaultClientID,
 		DefaultRedirectURI:                      config.DefaultRedirectURI,
@@ -880,7 +879,7 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		AllowedBackURLs:                         allowedBackURLs,
 		OnboardingUserEditingEnabled:            defaultBool(config.OnboardingUserEditingEnabled, false),
 		IdentificationURL:                       config.IdentificationURL,
-		SponsorIdentificationURLs:               defaultStringMap(config.SponsorIdentificationURLs, emptyMap),
+		SponsorIdentificationURLs:               defaultStringMap(config.SponsorIdentificationURLs, map[string]string{}),
 	}
 }
 

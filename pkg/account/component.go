@@ -500,7 +500,6 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
 	currentRealm := ctx.Value(cs.CtContextRealm).(string)
 	accessToken := ctx.Value(cs.CtContextAccessToken).(string)
-	realm := ctx.Value(cs.CtContextRealm).(string)
 
 	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
 	if err != nil {
@@ -531,17 +530,16 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		allowedBackURLs = config.AllowedBackURLs
 	}
 
-	account, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
+	account, err := c.keycloakAccountClient.GetAccount(accessToken, currentRealm)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get Keycloak account", "err", err.Error(), "realm", realm)
+		c.logger.Warn(ctx, "msg", "Can't get Keycloak account", "err", err.Error(), "realm", currentRealm)
 		return api.Configuration{}, err
 	}
 
 	// Get the identification URL based on the user's highest priority sponsor
 	identificationURL := config.IdentificationURL
-	accreditationSponsors := account.Attributes.Get(constants.AttrbAccreditationSponsors)
-	if accreditationSponsors != nil {
-		sponsorsAttribute := sponsorsattribute.New(ctx, &accreditationSponsors[0], c.logger)
+	if accreditationSponsors := account.GetAttributeString(constants.AttrbAccreditationSponsors); accreditationSponsors != nil {
+		sponsorsAttribute := sponsorsattribute.New(ctx, accreditationSponsors, c.logger)
 		highestSponsor := getHighestPrioritySponsor(&sponsorsAttribute)
 		if highestSponsor != "" {
 			if url, ok := config.SponsorIdentificationURLs[highestSponsor]; ok {
@@ -597,8 +595,8 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 func getHighestPrioritySponsor(sa *sponsorsattribute.SponsorsAttribute) string {
 	accredsInPriorityOrder := []string{"DEP", "AUTO", "BASIC"}
 	for _, accred := range accredsInPriorityOrder {
-		sponsor := sa.GetSponsor(accred)
-		if sponsor != "" {
+		sponsor, ok := sa.GetSponsor(accred)
+		if ok {
 			return sponsor
 		}
 	}
