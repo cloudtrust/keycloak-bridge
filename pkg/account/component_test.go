@@ -21,6 +21,7 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/cloudtrust/keycloak-bridge/internal/sponsorsattribute"
 )
 
 type componentMock struct {
@@ -59,6 +60,12 @@ func getContextKeys(contextKeyID string, accreditationRequested string) []config
 			},
 		},
 	}
+}
+
+func createAccountWithSponsors(sponsors string) kc.UserRepresentation {
+	attributes := kc.Attributes{}
+	attributes.SetString(constants.AttrbAccreditationSponsors, sponsors)
+	return kc.UserRepresentation{Attributes: &attributes}
 }
 
 func TestUpdatePassword(t *testing.T) {
@@ -985,6 +992,7 @@ func TestGetConfiguration(t *testing.T) {
 	var falseBool = false
 	var trueBool = true
 	var identificationUrl = "identification.url.com"
+	var sponsorIdentifcationUrls = map[string]string{"realm1": "url1", "realm2": "url2"}
 	var config = configuration.RealmConfiguration{
 		APISelfAuthenticatorDeletionEnabled:     &falseBool,
 		APISelfAccountEditingEnabled:            &falseBool,
@@ -1004,6 +1012,7 @@ func TestGetConfiguration(t *testing.T) {
 		OnboardingUserEditingEnabled:            &falseBool,
 		APISelfInitialPasswordDefinitionAllowed: &falseBool,
 		IdentificationURL:                       &identificationUrl,
+		SponsorIdentificationURLs:               sponsorIdentifcationUrls,
 	}
 	var adminConfig = configuration.RealmAdminConfiguration{
 		AvailableChecks:                          map[string]bool{"IDNow": false, "physical-check": true},
@@ -1020,6 +1029,8 @@ func TestGetConfiguration(t *testing.T) {
 	}
 	var supportedLocales = []string{"fr", "en", "es"}
 	var realmConfig = kc.RealmRepresentation{InternationalizationEnabled: &trueBool, SupportedLocales: &supportedLocales}
+	var attributes = kc.Attributes{}
+	attributes.SetString(constants.AttrbAccreditationSponsors, `{"DEP":"realm2","BASIC":"realm1"}`)
 	var anyError = errors.New("any error")
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
@@ -1029,6 +1040,7 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
 		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, nil)
 
 		resConfig, err := component.GetConfiguration(ctx, "")
 
@@ -1067,6 +1079,7 @@ func TestGetConfiguration(t *testing.T) {
 			RedirectSuccessfulRegistrationURL: &successURL,
 		}, nil)
 		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{Attributes: &attributes}, nil)
 
 		resConfig, err := component.GetConfiguration(ctx, overrideRealm)
 
@@ -1091,6 +1104,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, adminConfig.VideoIdentificationAllowedRoles, resConfig.VideoIdentificationAllowedRoles)
 		assert.Equal(t, adminConfig.AuxiliaryVideoIdentificationAllowedRoles, resConfig.AuxiliaryVideoIdentificationAllowedRoles)
 		assert.Equal(t, adminConfig.AutoIdentificationAllowedRoles, resConfig.AutoIdentificationAllowedRoles)
+		assert.Equal(t, "url2", *resConfig.IdentificationURL)
 	})
 
 	t.Run("Error on GetConfiguration", func(t *testing.T) {
@@ -1116,6 +1130,50 @@ func TestGetConfiguration(t *testing.T) {
 		_, err := component.GetConfiguration(ctx, "")
 
 		assert.NotNil(t, err)
+	})
+	t.Run("Error on GetAccount", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
+		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, anyError)
+
+		_, err := component.GetConfiguration(ctx, "")
+
+		assert.Error(t, err)
+	})
+}
+
+func TestGetHighestPrioritySponsor(t *testing.T) {
+	var logger = log.NewNopLogger()
+	var ctx = context.TODO()
+
+	t.Run("DEP has priority over AUTO and BASIC", func(t *testing.T) {
+		var sponsors = sponsorsattribute.New(ctx, new(`{"BASIC":"sponsor-basic","AUTO":"sponsor-auto","DEP":"sponsor-dep"}`), logger)
+		assert.Equal(t, "sponsor-dep", getHighestPrioritySponsor(&sponsors))
+	})
+	t.Run("AUTO has priority over BASIC", func(t *testing.T) {
+		var sponsors = sponsorsattribute.New(ctx, new(`{"BASIC":"sponsor-basic","AUTO":"sponsor-auto"}`), logger)
+		assert.Equal(t, "sponsor-auto", getHighestPrioritySponsor(&sponsors))
+	})
+	t.Run("BASIC only", func(t *testing.T) {
+		var sponsors = sponsorsattribute.New(ctx, new(`{"BASIC":"sponsor-basic"}`), logger)
+		assert.Equal(t, "sponsor-basic", getHighestPrioritySponsor(&sponsors))
+	})
+	t.Run("Unknown accreditation only", func(t *testing.T) {
+		var sponsors = sponsorsattribute.New(ctx, new(`{"OTHER":"sponsor-other"}`), logger)
+		assert.Equal(t, "", getHighestPrioritySponsor(&sponsors))
+	})
+	t.Run("Empty sponsors", func(t *testing.T) {
+		var sponsors = sponsorsattribute.New(ctx, new(`{}`), logger)
+		assert.Equal(t, "", getHighestPrioritySponsor(&sponsors))
+	})
+	t.Run("Invalid sponsors attribute", func(t *testing.T) {
+		var sponsors = sponsorsattribute.New(ctx, new(`{-`), logger)
+		assert.Equal(t, "", getHighestPrioritySponsor(&sponsors))
+	})
+	t.Run("Nil sponsors attribute", func(t *testing.T) {
+		var sponsors = sponsorsattribute.New(ctx, nil, logger)
+		assert.Equal(t, "", getHighestPrioritySponsor(&sponsors))
 	})
 }
 

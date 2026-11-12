@@ -90,4 +90,5 @@ const (
 	Favicon                           = "favicon"
 	Translations                      = "translations"
 	IdentificationURL                 = "identificationURL"
+	SponsorIdentificationURLs         = "sponsorIdentificationURLs"
 )
