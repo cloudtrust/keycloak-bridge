@@ -34,6 +34,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        400:
+          description: invalid path parameter
+        404:
+          description: user not found (Keycloak error status is passed through)
     put:
       tags:
       - UserData
@@ -65,8 +69,12 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid parameter, invalid body or body validation failed
+        404:
+          description: user not found (Keycloak error status is passed through)
   /validation/realms/{realm}/users/{userID}/accreditations:
-    post:
+    put:
       tags:
       - UserData
       summary: Adds an accreditation
@@ -83,6 +91,12 @@ paths:
         required: true
         schema:
           type: string
+      - name: sponsors
+        in: query
+        description: sponsors of the granted accreditations
+        required: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -93,6 +107,10 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: invalid parameter, invalid body or body validation failed
+        404:
+          description: user not found (Keycloak error status is passed through)
   /validation/realms/{realm}/users/{userID}/groups:
     get:
       tags:
@@ -120,6 +138,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Group'
+        400:
+          description: invalid path parameter
+        404:
+          description: user not found (Keycloak error status is passed through)
   /validation/realms/{realm}/users/{userID}/roles:
     get:
       tags:
@@ -147,21 +169,29 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+        400:
+          description: invalid path parameter
+        404:
+          description: user not found (Keycloak error status is passed through)
 components:
   schemas:
     Accreditation:
       type: object
+      required: [name, validity]
       properties:
         name:
           type: string
         validity:
           type: string
-          description: format is DD.MM.YYYY
+          description: validity duration (combination of number+unit with unit in y, m, w, d), e.g. 2y, 6m, 1y6m
+          pattern: '^([1-9]\d*[ymwd])+$'
     User:
       type: object
-      required: [gender, firstName, lastName, emailAddress, phoneNumber]
+      description: required fields are defined by the realm user profile
       properties:
         id:
+          type: string
+        username:
           type: string
         gender:
           type: string
@@ -171,14 +201,23 @@ components:
           type: string
         email:
           type: string
+        emailVerified:
+          type: boolean
+          readOnly: true
+          description: only filled in GET user
         phoneNumber:
           type: string
+        phoneNumberVerified:
+          type: boolean
+          readOnly: true
+          description: only filled in GET user
         locale:
           type: string
           description: only filled in GET user
         birthDate:
           type: string
-          description: format is DD.MM.YYYY
+          format: date-time
+          description: RFC3339 date-time
         birthLocation:
           type: string
         nationality:
@@ -191,32 +230,11 @@ components:
           type: string
         idDocumentExpiration:
           type: string
+          format: date-time
+          description: RFC3339 date-time
         idDocumentCountry:
           type: string
           description: ISO 3166 Alpha-2 country code
-    Check:
-      type: object
-      properties:
-        userId:
-          type: string
-        operator:
-          type: string
-        datetime:
-          type: string
-          format: date-time
-        status:
-          type: string
-        proofData:
-          type: string
-          format: byte
-        proofType:
-          type: string
-        type:
-          type: string
-        nature:
-          type: string
-        txnId:
-          type: string
     Group:
       type: object
       properties:
