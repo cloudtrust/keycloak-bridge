@@ -3138,6 +3138,8 @@ func TestGetRoles(t *testing.T) {
 			ContainerID: &containerID,
 			Description: &description,
 			Attributes: &map[string][]string{
+				"KEY1":               {"value1"},
+				"KEY2":               {"value2"},
 				"BUSINESS_ROLE_FLAG": {"true"},
 			},
 		}
@@ -3159,6 +3161,7 @@ func TestGetRoles(t *testing.T) {
 		assert.Equal(t, composite, *apiRoleRep.Composite)
 		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
+		assert.Len(t, apiRoleRep.Attributes, 2) // BUSINESS_ROLE_FLAG is filtered out
 	})
 
 	t.Run("NonBusinessRole are not returned", func(t *testing.T) {
@@ -3171,7 +3174,7 @@ func TestGetRoles(t *testing.T) {
 		apiRolesRep, err := managementComponent.GetRoles(ctx, "master")
 
 		assert.Nil(t, err)
-		assert.Equal(t, []api.RoleRepresentation{}, apiRolesRep)
+		assert.Len(t, apiRolesRep, 0)
 	})
 
 	t.Run("Error", func(t *testing.T) {
@@ -3373,7 +3376,7 @@ func TestUpdateRole(t *testing.T) {
 	}
 	var inputRole = api.RoleRepresentation{
 		Name: &roleName,
-		Attributes: &map[string][]string{
+		Attributes: map[string][]string{
 			"attribute": {"value"},
 		},
 	}
@@ -3724,12 +3727,10 @@ func TestGetAuthorizations(t *testing.T) {
 
 		apiAuthorizationRep, err := managementComponent.GetAuthorizations(ctx, targetRealmname, groupID)
 
-		var matrix = map[string]map[string]map[string]struct{}{
-			"action": {},
-		}
-
 		var expectedAPIAuthorization = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
+			Matrix: map[string]map[string]map[string]struct{}{
+				"action": {},
+			},
 		}
 
 		assert.Nil(t, err)
@@ -3785,12 +3786,11 @@ func TestUpdateAuthorizations(t *testing.T) {
 	var groups = []kc.GroupRepresentation{group}
 
 	var action = "MGMT_action"
-	var matrix = map[string]map[string]map[string]struct{}{
-		action: {},
-	}
 
 	var apiAuthorizations = api.AuthorizationsRepresentation{
-		Matrix: &matrix,
+		Matrix: map[string]map[string]map[string]struct{}{
+			action: {},
+		},
 	}
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -3927,7 +3927,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 		}
 
 		var apiAuthorizations = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
+			Matrix: matrix,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -3984,7 +3984,7 @@ func TestAddAuthorization(t *testing.T) {
 	var matrix = map[string]map[string]map[string]struct{}{
 		action: {targetRealmName: {targetGroupName: {}}},
 	}
-	apiAuthz := api.AuthorizationsRepresentation{Matrix: &matrix}
+	apiAuthz := api.AuthorizationsRepresentation{Matrix: matrix}
 	dbAuth := configuration.Authorization{
 		RealmID:         &realmName,
 		GroupName:       &groupName,
@@ -3995,7 +3995,7 @@ func TestAddAuthorization(t *testing.T) {
 	var matrixRealm = map[string]map[string]map[string]struct{}{
 		actionRealm: {targetRealmName: {star: {}}},
 	}
-	apiAuthzRealm := api.AuthorizationsRepresentation{Matrix: &matrixRealm}
+	apiAuthzRealm := api.AuthorizationsRepresentation{Matrix: matrixRealm}
 	dbAuthRealm := configuration.Authorization{
 		RealmID:         &realmName,
 		GroupName:       &groupName,

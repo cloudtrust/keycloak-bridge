@@ -36,12 +36,12 @@ type EmailRepresentation struct {
 
 // EmailThemingRepresentation struct
 type EmailThemingRepresentation struct {
-	SubjectKey         *string            `json:"subjectKey,omitempty"`
-	SubjectParameters  *[]string          `json:"subjectParameters,omitempty"`
-	Template           *string            `json:"template,omitempty"`
-	TemplateParameters *map[string]string `json:"templateParameters,omitempty"`
-	Locale             *string            `json:"locale,omitempty"`
-	ThemeRealmName     *string            `json:"themeRealmName,omitempty"`
+	SubjectKey         *string           `json:"subjectKey,omitempty"`
+	SubjectParameters  *[]string         `json:"subjectParameters,omitempty"`
+	Template           *string           `json:"template,omitempty"`
+	TemplateParameters map[string]string `json:"templateParameters,omitempty"`
+	Locale             *string           `json:"locale,omitempty"`
+	ThemeRealmName     *string           `json:"themeRealmName,omitempty"`
 }
 
 // AttachementRepresentation struct
@@ -65,7 +65,9 @@ func ExportEmailToKeycloak(r *EmailRepresentation) *kc.EmailRepresentation {
 		kcRep.Theming.SubjectKey = r.Theming.SubjectKey
 		kcRep.Theming.SubjectParameters = r.Theming.SubjectParameters
 		kcRep.Theming.Template = r.Theming.Template
-		kcRep.Theming.TemplateParameters = r.Theming.TemplateParameters
+		if r.Theming.TemplateParameters != nil {
+			kcRep.Theming.TemplateParameters = &r.Theming.TemplateParameters
+		}
 		kcRep.Theming.Locale = r.Theming.Locale
 		kcRep.Theming.ThemeRealmName = r.Theming.ThemeRealmName
 	}
@@ -97,7 +99,9 @@ func ImportEmailFromKeycloak(kcRep *kc.EmailRepresentation) *EmailRepresentation
 		r.Theming.SubjectKey = kcRep.Theming.SubjectKey
 		r.Theming.SubjectParameters = kcRep.Theming.SubjectParameters
 		r.Theming.Template = kcRep.Theming.Template
-		r.Theming.TemplateParameters = kcRep.Theming.TemplateParameters
+		if kcRep.Theming.TemplateParameters != nil {
+			r.Theming.TemplateParameters = *kcRep.Theming.TemplateParameters
+		}
 		r.Theming.Locale = kcRep.Theming.Locale
 		r.Theming.ThemeRealmName = kcRep.Theming.ThemeRealmName
 	}

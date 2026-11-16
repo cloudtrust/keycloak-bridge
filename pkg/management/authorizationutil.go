@@ -19,7 +19,7 @@ func Validate(authorizations []configuration.Authorization, allowedTargetRealmsA
 
 	var authZ = api.ConvertToAPIAuthorizations(authorizations)
 
-	var checker = *authZ.Matrix
+	var checker = authZ.Matrix
 	for _, u := range checker {
 		for realmID, v := range u {
 			// Check if * as targetRealm, there is no other targetRealm rule
