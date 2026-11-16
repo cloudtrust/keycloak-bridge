@@ -86,28 +86,18 @@ func handleKeycloakIdpError(err error) error {
 	return handleKeycloakError(err, "idp")
 }
 
+// handleKeycloakError converts Keycloak 404 (resp. 400) errors into bridge NotFound (resp. BadRequest) errors.
+// Any other error is returned unchanged.
 func handleKeycloakError(err error, messageKey string) error {
-	if err != nil {
-		switch e := err.(type) {
-		case kc.HTTPError:
-			if e.HTTPStatus == http.StatusNotFound {
-				return errorhandler.CreateNotFoundError(messageKey)
-			}
-		case kc.ClientDetailedError:
-			if e.Status() == http.StatusBadRequest {
-				return errorhandler.CreateBadRequestError(messageKey)
-			}
-		default:
-			return err
+	switch e := err.(type) {
+	case kc.HTTPError:
+		if e.HTTPStatus == http.StatusNotFound {
+			return errorhandler.CreateNotFoundError(messageKey)
 		}
-	}
-	return nil
-}
-
-func overrideKeycloakError(err error, messageKey string) error {
-	var overridedErr = handleKeycloakError(err, messageKey)
-	if overridedErr != nil {
-		return overridedErr
+	case kc.ClientDetailedError:
+		if e.Status() == http.StatusBadRequest {
+			return errorhandler.CreateBadRequestError(messageKey)
+		}
 	}
 	return err
 }
@@ -571,7 +561,7 @@ func (c *component) updateUser(ctx context.Context, realmName string, userID str
 		return err
 	}
 	if updateFunc(&user) {
-		err = overrideKeycloakError(c.keycloakIdpClient.UpdateUser(accessToken, realmName, userID, user), "attribute")
+		err = handleKeycloakError(c.keycloakIdpClient.UpdateUser(accessToken, realmName, userID, user), "attribute")
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Failed to update user from keycloak", "err", err.Error(), "realm", realmName, "user", userID)
 			return err

@@ -23,25 +23,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Actions'
-  /statistics/realms/{realm}:
-    get:
-      tags:
-      - Statistics
-      summary: Get the statistics for a realm
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Statistics'
+        403:
+          description: not allowed
   /statistics/realms/{realm}/identifications:
     get:
       tags:
@@ -61,6 +44,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IdentificationStatistics'
+        403:
+          description: not allowed
   /statistics/realms/{realm}/users:
     get:
       tags:
@@ -79,7 +64,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatisticsUsers'   
+                $ref: '#/components/schemas/StatisticsUsers'
+        403:
+          description: not allowed
   /statistics/realms/{realm}/authenticators:
     get:
       tags:
@@ -98,29 +85,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatisticsAuthenticators'  
-  /statistics/realms/{realm}/authentications-graph:
+                $ref: '#/components/schemas/StatisticsAuthenticators'
+        403:
+          description: not allowed
+  /statistics/realms/{realm}/migration:
     get:
       tags:
       - Statistics
-      summary: Get the statistics on the authentications, on different time periods, for a certain realm
+      summary: Get the migration report of the users of a certain realm
       parameters:
       - name: realm
         in: path
         description: realm name (not id!)
         required: true
-        schema:
-          type: string
-      - name: unit
-        in: query
-        description: unit of time, i.e. hours, days or months
-        required: true
-        schema:
-          type: string
-      - name: timeshift
-        in: query
-        description: timeshift compared to UTC in minutes. Must start with + or - (default +0)
-        required: false
         schema:
           type: string
       responses:
@@ -129,34 +106,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatisticsAuthentications'     
-  /statistics/realms/{realm}/authentications-log:
-    get:
-      tags:
-      - Statistics
-      summary: Get the information on the last authentications, successful or failed, for a certain realm
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: max
-        in: query
-        description: number of authentications 
-        required: true
-        schema:
-          type: string          
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/StatisticsConnection'                                               
+                $ref: '#/components/schemas/MigrationReport'
+        403:
+          description: not allowed
 components:
   schemas:
     Actions:
@@ -166,61 +118,39 @@ components:
           type: string
         scope:
           type: string
-    Statistics:
-      type: object
-      properties:
-        lastConnection:
-          type: number
-        totalConnections:
-          type: object
-          properties:
-            lastTwelveHours:
-              type: number
-            lastDay:
-              type: number
-            lastWeek:
-              type: number
-            lastMonth:
-              type: number
-            lastYear:
-              type: number
     IdentificationStatistics:
       type: object
       properties:
         videoIdentifications:
-          type: number
+          type: integer
+        physicalIdentifications:
+          type: integer
+        autoIdentifications:
+          type: integer
+        basicIdentifications:
+          type: integer
     StatisticsUsers:
       type: object
       properties:
         total:
-          type: number
+          type: integer
+          format: int64
         disabled:
-          type: number
+          type: integer
+          format: int64
         inactive:
-          type: number      
+          type: integer
+          format: int64
     StatisticsAuthenticators:
       type: object
       additionalProperties:
-        type: number       
-    StatisticsAuthentications:
-      type: array
-      items:
-        type: array
-        items:
-          type: integer  
-        minItems: 2
-        maxItems: 2        
-    StatisticsConnection:
+        type: integer
+        format: int64
+    MigrationReport:
       type: object
-      properties:
-        date:
-          type: string 
-        result:
-          type: string
-        user:
-          type: string
-        IP: 
-          type: string    
+      description: map of username to migration status (true if the user has been migrated)
+      additionalProperties:
+        type: boolean
   securitySchemes:
     openId:
       type: openIdConnect

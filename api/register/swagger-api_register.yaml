@@ -15,10 +15,10 @@ paths:
       - Register
       summary: Creates a user in the configured realm (register-realm)
       security:
-        - BasicAuth: [recaptcha]
+        - Recaptcha: []
       parameters:
       - name: realm
-        in: path
+        in: query
         description: realm name (not id!) of a realm configured with a redirect URL for the end of the process
         required: true
         schema:
@@ -29,30 +29,32 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$'
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/User'
       responses:
+        200:
+          description: Successful operation in redirect mode (enabled by the context key). Returns the URL the end-user has to be redirected to
+          content:
+            application/json:
+              schema:
+                type: string
         204:
           description: Successful operation
         400:
-          description: Invalid information provided
+          description: Invalid information provided (missing realm, invalid body or invalid context-key)
         403:
-          description: Invalid RECAPTCHA token
+          description: Missing or invalid RECAPTCHA token
+        409:
+          description: Self-register is not enabled or not configured for the realm
   /register/user/profile:
     get:
       tags:
       - Configuration
-      summary: Gets the definition of user attributes
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
+      summary: Gets the definition of user attributes of the configured realm (register-realm)
       responses:
         200:
           description: successful operation. Returns the realm users profile
@@ -60,15 +62,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Profile'
-  /register/realms/{realm}/user:
+  /register/realms/{corpRealm}/user:
     post:
       tags:
       - Register
       summary: Creates a user in the realm specified in URL path
       security:
-        - BasicAuth: [recaptcha]
+        - Recaptcha: []
       parameters:
-      - name: realm
+      - name: corpRealm
         in: path
         description: realm name (not id!)
         required: true
@@ -80,25 +82,34 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$'
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/User'
       responses:
+        200:
+          description: Successful operation in redirect mode (enabled by the context key). Returns the URL the end-user has to be redirected to
+          content:
+            application/json:
+              schema:
+                type: string
         204:
           description: Successful operation
         400:
-          description: Invalid information provided
+          description: Invalid information provided (invalid body or invalid context-key)
         403:
-          description: Invalid RECAPTCHA token
-  /register/realms/{realm}/user/profile:
+          description: Missing or invalid RECAPTCHA token
+        409:
+          description: Self-register is not enabled or not configured for the realm
+  /register/realms/{corpRealm}/user/profile:
     get:
       tags:
       - Configuration
       summary: Gets the definition of user attributes from the realm specified in URL path
       parameters:
-      - name: realm
+      - name: corpRealm
         in: path
         description: realm name (not id!)
         required: true
@@ -134,8 +145,13 @@ components:
   schemas:
     User:
       type: object
-      required: [gender, firstName, lastName, email, phoneNumber]
+      description: >
+        Required fields and their validation rules are defined by the realm user profile (see the profile endpoints).
+        Additional attributes defined in the realm user profile are accepted as top-level properties.
+      additionalProperties: true
       properties:
+        username:
+          type: string
         gender:
           type: string
           enum: [M,F,U]
@@ -171,14 +187,14 @@ components:
         businessId:
           type: string
           description: Business identifier (can be GLN)
-        onBoardingStatus:
+        onboardingStatus:
           type: string
           enum: ["", self-registration-form-completed, user-created-by-api, email-verified, password-set, phone-verified, 2fa-set, completed]
           description: user onboarding flow status
     Configuration:
       type: object
       properties:
-        cancelUrl:
+        redirect_cancelled_registration_url:
           type: string
         mode:
           type: string
@@ -195,6 +211,8 @@ components:
         contextKey:
           type: string
           description: context key of the specified realm
+        registerMode:
+          type: string
     Profile:
       type: object
       properties:
@@ -219,8 +237,14 @@ components:
           description: name of a group defined in ProfileGroup
         required:
           type: boolean
+        readOnly:
+          type: boolean
         validations:
           $ref: '#/components/schemas/ProfileAttributeValidations'
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
     ProfileAttributeValidations:
       description: >
         Here is a list of known validators :
@@ -255,6 +279,8 @@ components:
           additionalProperties:
             type: string
   securitySchemes:
-    BasicAuth:
-      type: http
-      scheme: basic
+    Recaptcha:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: raw RECAPTCHA token (no scheme prefix), must match ^[\w\d-]+$

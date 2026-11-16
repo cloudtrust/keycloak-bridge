@@ -1,10 +1,10 @@
 openapi: 3.0.1
 info:
-  title: Swagger Cloudtrust Management
+  title: Swagger Cloudtrust Account
   description: 'API Self service for Cloudtrust.'
   version: 1.0.0
 servers:
-- url: http://localhost:8888
+- url: http://localhost:8866
 paths:
   /account:
     get:
@@ -21,7 +21,7 @@ paths:
     post:
       tags:
       - Account
-      summary: Update account representation of the current user
+      summary: Update account representation of the current user. Input is validated against the realm users profile
       requestBody:
         content:
           application/json:
@@ -30,6 +30,10 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: Invalid body, body does not match the realm users profile or tried to update a read-only field (update-read-only-field)
+        403:
+          description: Account editing is disabled for the realm
     delete:
       tags:
       - Account
@@ -37,10 +41,12 @@ paths:
       responses:
         200:
           description: successful operation
+        403:
+          description: Account deletion is disabled for the realm
   /account/configuration:
     get:
       tags:
-      - Credentials
+      - Configuration
       summary: Get self-service configuration. Realm query parameter is used to override some configuration parameters with the value specified for the realm
       parameters:
       - name: realm_id
@@ -66,14 +72,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  count:
-                    type: number
-                  credentials:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Credential'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Credential'
   /account/credentials/password:
     post:
       tags:
@@ -90,7 +91,7 @@ paths:
         400:
           description: Bad parameters (same old and new passwords, different new and confirm passwords, ...)
         403:
-          description: Caller is not allowed to change the password
+          description: Callers are not allowed to change a password for this realm
   /account/credentials/registrators:
     get:
       tags:
@@ -125,6 +126,8 @@ paths:
       responses:
         200:
           description: Successfuly updated.
+        400:
+          description: Invalid body or missing userLabel
     delete:
       tags:
       - Credentials
@@ -139,6 +142,12 @@ paths:
       responses:
         200:
           description: successful operation
+        400:
+          description: The credential can't be removed (cantRemovePassword when it is the password, notEnoughMFA when it is the last MFA of the user)
+        403:
+          description: Authenticator deletion is disabled for the realm
+        404:
+          description: Unknown credential
   /account/credentials/{credentialId}/after/{previousCredentialId}:
     post:
       tags:
@@ -218,6 +227,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/LinkedAccount'
+        403:
+          description: IDP links management is disabled for the realm
   /account/linked-accounts/{providerAlias}:
     delete:
       tags:
@@ -233,6 +244,8 @@ paths:
       responses:
         200:
           description: successful operation
+        403:
+          description: IDP links management is disabled for the realm
   /account/can-identify:
     get:
       tags:
@@ -276,13 +289,16 @@ components:
           type: integer
           format: int64
         credentialData:
-          type: object
+          type: string
+          description: JSON serialized credential data
         temporary:
           type: boolean
     RegistratorId:
       type: string
     Account:
       type: object
+      description: Account of the current user.
+      additionalProperties: true
       properties:
         username:
           type: string
@@ -340,25 +356,27 @@ components:
           type: array
           description: only returned by /account
           items:
-            type: object
-            properties:
-              type:
-                type: string
-                description: accreditation type
-              expiryDate:
-                type: string
-                description: expiry date. format is DD.MM.YYYY
-              expired:
-                type: boolean
-                description: true if the expiry date has passed
-              revoked:
-                type: boolean
-                description: true if the accreditation has been revoked
+            $ref: '#/components/schemas/Accreditation'
         pendingChecks:
           type: array
-          description: Used only by getUser
+          description: Only used by getUser. Names of the pending identification checks of the user
           items:
             type: string
+    Accreditation:
+      type: object
+      properties:
+        type:
+          type: string
+          description: accreditation type
+        expiryDate:
+          type: string
+          description: expiry date. format is DD.MM.YYYY
+        expired:
+          type: boolean
+          description: true if the expiry date has passed
+        revoked:
+          type: boolean
+          description: true if the accreditation has been revoked
     Configuration:
       type: object
       properties:
@@ -368,7 +386,7 @@ components:
           type: boolean
         show_password_tab:
           type: boolean
-        show_profile:
+        show_profile_tab:
           type: boolean
         show_account_deletion_button:
           type: boolean
@@ -391,8 +409,47 @@ components:
           type: string
         supportedLocales:
           type: array
+          description: only provided when internationalization is enabled for the realm
           items:
             type: string
+        video_identification_voucher_enabled:
+          type: boolean
+        video_identification_accounting_enabled:
+          type: boolean
+        video_identification_prepayment_required:
+          type: boolean
+        auto_identification_voucher_enabled:
+          type: boolean
+        auto_identification_accounting_enabled:
+          type: boolean
+        auto_identification_prepayment_required:
+          type: boolean
+        video_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        auxiliary_video_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        auto_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        physical_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        allowed_back_urls:
+          type: array
+          items:
+            type: string
+        allow_initial_password_definition:
+          type: boolean
+        identification_url:
+          type: string
+        bo_external_idp_management_enabled:
+          type: boolean
     LinkedAccount:
       type: object
       properties:
@@ -432,8 +489,14 @@ components:
           description: name of a group defined in ProfileGroup
         required:
           type: boolean
+        readOnly:
+          type: boolean
         validations:
           $ref: '#/components/schemas/ProfileAttributeValidations'
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
     ProfileAttributeValidations:
       description: >
         Here is a list of known validators :

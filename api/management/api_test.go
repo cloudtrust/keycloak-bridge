@@ -1486,7 +1486,7 @@ func TestValidateUpdatableThemeConfiguration(t *testing.T) {
 
 	t.Run("Invalid configurations", func(t *testing.T) {
 		var configs []UpdatableThemeConfiguration
-		for range 10 {
+		for range 11 {
 			configs = append(configs, UpdatableThemeConfiguration{
 				RealmName: new("realmName"),
 				Settings:  &ThemeConfigurationSettings{},
@@ -1512,6 +1512,7 @@ func TestValidateUpdatableThemeConfiguration(t *testing.T) {
 				"subkey": 12345,
 			},
 		} // invalid type
+		configs[10].Settings = nil // missing settings
 
 		for idx, config := range configs {
 			t.Run(fmt.Sprintf("Invalid case #%d", idx), func(t *testing.T) {

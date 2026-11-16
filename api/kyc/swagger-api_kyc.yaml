@@ -1,10 +1,10 @@
 openapi: 3.0.1
 info:
-  title: Swagger Cloudtrust Register
+  title: Swagger Cloudtrust KYC
   description: 'Know your customer API for Cloudtrust.'
   version: 1.0.0
 servers:
-- url: http://localhost:8855
+- url: http://localhost:8877
 tags:
 - name: KYC
   description: Know your customer API
@@ -50,6 +50,10 @@ paths:
                 $ref: '#/components/schemas/User'
         403:
           description: No permission to call this operation
+        404:
+          description: User not found (or end-user group not found in the social realm)
+        409:
+          description: Physical check feature is not enabled for the realm of the JWT token
   /kyc/social/users/profile:
     get:
       tags:
@@ -66,7 +70,7 @@ paths:
                 $ref: '#/components/schemas/Profile'
         403:
           description: No permission to call this operation
-  /kyc/social/users/{userId}:
+  /kyc/social/users/{userID}:
     get:
       tags:
       - KYC
@@ -74,7 +78,7 @@ paths:
       security:
         - openId: []
       parameters:
-      - name: userId
+      - name: userID
         in: path
         description: user id
         required: true
@@ -86,6 +90,7 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^\d+$'
       responses:
         200:
           description: Successful operation
@@ -95,8 +100,10 @@ paths:
                 $ref: '#/components/schemas/User'
         403:
           description: No permission to call this operation
+        409:
+          description: Physical check feature is not enabled for the realm of the JWT token
         430:
-          description: Missing or invalid consent code 
+          description: Missing or invalid consent code
     put:
       tags:
       - KYC
@@ -106,7 +113,7 @@ paths:
       security:
         - openId: []
       parameters:
-      - name: userId
+      - name: userID
         in: path
         description: user id
         required: true
@@ -118,6 +125,7 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^\d+$'
       requestBody:
         content:
           application/json:
@@ -125,18 +133,18 @@ paths:
               $ref: '#/components/schemas/User'
       responses:
         200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: string
+          description: Successful operation (empty body)
         400:
           description: Invalid information provided
         403:
           description: No permission to call this operation
+        404:
+          description: User not found
+        409:
+          description: Physical check feature is not enabled for the realm of the JWT token
         430:
           description: Missing or invalid consent code
-  /kyc/social/users/{userId}/checks/basic:        
+  /kyc/social/users/{userID}/checks/basic:
     put:
       tags:
       - KYC
@@ -147,7 +155,7 @@ paths:
       security:
         - openId: []
       parameters:
-      - name: userId
+      - name: userID
         in: path
         description: user id
         required: true
@@ -160,23 +168,21 @@ paths:
               $ref: '#/components/schemas/User'
       responses:
         200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: string
+          description: Successful operation (empty body)
         400:
           description: Invalid information provided
         403:
           description: No permission to call this operation
-  /kyc/social/users/{userId}/send-consent-code:
+  /kyc/social/users/{userID}/send-consent-code:
     post:
       tags:
       - KYC
       summary: >
         Send a consent code by sms to a user. The end-user will have to tell this code to the RO/PEO to allow him to access his/her personal information.
+      security:
+        - openId: []
       parameters:
-      - name: userId
+      - name: userID
         in: path
         description: User id
         required: true
@@ -184,28 +190,23 @@ paths:
           type: string
       responses:
         200:
-          description: Code correctly sent by SMS
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: string
+          description: Code correctly sent by SMS (empty body)
         400:
           description: "Invalid input"
         403:
           description: "No permission to call this operation"
         409:
           description: Consent feature is not enabled for the realm of the JWT token
-  /kyc/social/users/{userId}/send-sms-code:
+  /kyc/social/users/{userID}/send-sms-code:
     post:
       tags:
       - KYC
       summary: >
         Send an sms code to a user and returns the value to the requester. This can be used by RO/PEO to ensure the person claiming for something really owns the mobile as a proof of its identity.
+      security:
+        - openId: []
       parameters:
-      - name: userId
+      - name: userID
         in: path
         description: User id
         required: true
@@ -247,13 +248,15 @@ paths:
           type: string
       responses:
         200:
-          description: Returns the found user with fields id, username, firstName, lastName, emailVerified, phoneNumber, phoneNumberVerified and accreditations only
+          description: Returns the found user with fields id, username, firstName, lastName, emailVerified, phoneNumber, phoneNumberVerified, accreditations and groups only
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-        403:
-          description: No permission to call this operation
+        404:
+          description: User not found, or caller is not allowed to access the found user
+        409:
+          description: Physical check feature is not enabled for the realm
   /kyc/realms/{realm}/users/profile:
     get:
       tags:
@@ -277,7 +280,7 @@ paths:
                 $ref: '#/components/schemas/Profile'
         403:
           description: No permission to call this operation
-  /kyc/realms/{realm}/users/{userId}:
+  /kyc/realms/{realm}/users/{userID}:
     get:
       tags:
       - KYC
@@ -291,7 +294,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: userId
+      - name: userID
         in: path
         description: user id
         required: true
@@ -303,6 +306,7 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^\d+$'
       responses:
         200:
           description: Successful operation
@@ -312,15 +316,17 @@ paths:
                 $ref: '#/components/schemas/User'
         403:
           description: No permission to call this operation
+        409:
+          description: Physical check feature is not enabled for the realm
         430:
-          description: Missing or invalid consent code 
+          description: Missing or invalid consent code
     put:
       tags:
       - KYC
       summary: >
         Updates a user after physical identification.
         User id parameter is mandatory in the path of the URL. The username value in the request body will be overriden by the username from Keycloak.
-        Same method as /kyc/social/users/{userId} but for a specific realm
+        Same method as /kyc/social/users/{userID} but for a specific realm
       security:
         - openId: []
       parameters:
@@ -330,7 +336,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: userId
+      - name: userID
         in: path
         description: user id
         required: true
@@ -342,6 +348,7 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^\d+$'
       requestBody:
         content:
           application/json:
@@ -349,23 +356,25 @@ paths:
               $ref: '#/components/schemas/User'
       responses:
         200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: string
+          description: Successful operation (empty body)
         400:
           description: Invalid information provided
         403:
           description: No permission to call this operation
+        404:
+          description: User not found
+        409:
+          description: Physical check feature is not enabled for the realm
         430:
-          description: Missing or invalid consent code 
-  /kyc/realms/{realm}/users/{userId}/send-consent-code:
+          description: Missing or invalid consent code
+  /kyc/realms/{realm}/users/{userID}/send-consent-code:
     post:
       tags:
       - KYC
       summary: >
         Send a consent code by sms to a user. The end-user will have to tell this code to the RO/PEO to allow him to access his/her personal information.
+      security:
+        - openId: []
       parameters:
       - name: realm
         in: path
@@ -373,7 +382,37 @@ paths:
         required: true
         schema:
           type: string
-      - name: userId
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Code correctly sent by SMS (empty body)
+        400:
+          description: "Invalid input"
+        403:
+          description: "No permission to call this operation"
+        409:
+          description: Physical check feature or consent feature is not enabled for the realm
+  /kyc/realms/{realm}/users/{userID}/send-sms-code:
+    post:
+      tags:
+      - KYC
+      summary: >
+        Send an sms code to a user and returns the value to the requester. This can be used by RO/PEO to ensure the person claiming for something really owns the mobile as a proof of its identity.
+      security:
+        - openId: []
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
         in: path
         description: User id
         required: true
@@ -394,45 +433,14 @@ paths:
         403:
           description: "No permission to call this operation"
         409:
-          description: Consent feature is not enabled for the realm of the JWT token
-  /kyc/realms/{realm}/users/{userId}/send-sms-code:
-    post:
-      tags:
-      - KYC
-      summary: >
-        Send an sms code to a user and returns the value to the requester. This can be used by RO/PEO to ensure the person claiming for something really owns the mobile as a proof of its identity.
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: userId
-        in: path
-        description: User id
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: Code correctly sent by SMS
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: string
-        400:
-          description: "Invalid input"
-        403:
-          description: "No permission to call this operation"
+          description: Physical check feature is not enabled for the realm
   /kyc/auxiliary/realms/{realm}/users/profile:
     get:
       tags:
       - KYC
       summary: Gets the user profile for auxiliary KYC in a specific realm
+      security:
+        - openId: []
       parameters:
       - name: realm
         in: path
@@ -449,11 +457,13 @@ paths:
                 $ref: '#/components/schemas/Profile'
         403:
           description: No permission to call this operation
-  /kyc/auxiliary/realms/{realm}/users/{userId}:
+  /kyc/auxiliary/realms/{realm}/users/{userID}:
     get:
       tags:
       - KYC
       summary: Gets a user (auxiliary)
+      security:
+        - openId: []
       parameters:
       - name: realm
         in: path
@@ -461,7 +471,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: userId
+      - name: userID
         in: path
         description: user id
         required: true
@@ -473,6 +483,7 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^\d+$'
       responses:
         200:
           description: Successful operation
@@ -482,6 +493,8 @@ paths:
                 $ref: '#/components/schemas/User'
         403:
           description: No permission to call this operation
+        409:
+          description: Physical check feature is not enabled for the realm
         430:
           description: Missing or invalid consent code
     put:
@@ -490,6 +503,8 @@ paths:
       summary: >
         Validates a user after identification (auxiliary).
         User id parameter is mandatory in the path of the URL. The username value in the request body will be overriden by the username from Keycloak.
+      security:
+        - openId: []
       parameters:
       - name: realm
         in: path
@@ -497,7 +512,7 @@ paths:
         required: true
         schema:
           type: string
-      - name: userId
+      - name: userID
         in: path
         description: user id
         required: true
@@ -509,6 +524,7 @@ paths:
         required: false
         schema:
           type: string
+          pattern: '^\d+$'
       requestBody:
         content:
           application/json:
@@ -516,15 +532,15 @@ paths:
               $ref: '#/components/schemas/User'
       responses:
         200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: string
+          description: Successful operation (empty body)
         400:
           description: Invalid information provided
         403:
           description: No permission to call this operation
+        404:
+          description: User not found
+        409:
+          description: Physical check feature is not enabled for the realm
         430:
           description: Missing or invalid consent code
 components:
@@ -538,7 +554,10 @@ components:
           type: string
     User:
       type: object
-      required: [gender, firstName, lastName, emailAddress, phoneNumber]
+      description: >
+        Required fields and their validation rules are defined by the realm user profile (see the profile endpoints).
+        Additional attributes defined in the realm user profile are accepted and returned as top-level properties.
+      additionalProperties: true
       properties:
         id:
           type: string
@@ -617,7 +636,8 @@ components:
                 description: true if the accreditation has been revoked
         attachments:
           type: array
-          description: Used only by validateUser and currently limited to one attachment.
+          description: Used only by validateUser. Up to 6 attachments; when more than one is provided, they are sent as a single zip file.
+          maxItems: 6
           items:
             $ref: '#/components/schemas/Attachment'
     Attachment:
@@ -626,13 +646,15 @@ components:
       properties:
         filename:
           type: string
+          description: mandatory when contentType is missing (content type is then evaluated from the file extension, jpg/jpeg/pdf only)
         contentType:
           type: string
+          enum: [image/jpeg, application/pdf]
           description: when missing, content type is evaluated using file extension
         content:
           type: string
           format: byte
-          description: file size should be smaller than 5 Mo
+          description: decoded file size must be between 100 bytes and 5 MB
     Profile:
       type: object
       properties:

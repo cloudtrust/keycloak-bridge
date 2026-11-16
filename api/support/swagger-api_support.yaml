@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: 'Tasks API for Cloudtrust.'
+  description: 'Support API for Cloudtrust.'
   version: 1.0.0
 servers:
 - url: http://localhost:8888
@@ -22,13 +22,18 @@ paths:
           type: string
       responses:
         200:
-          description: successful operation
+          description: successful operation (the body is null instead of [] when the list is empty)
           content:
             application/json:
               schema:
                 type: array
+                nullable: true
                 items:
                   $ref: '#/components/schemas/EmailInfo'
+        400:
+          description: missing or invalid email parameter
+        404:
+          description: no account found for this email
 components:
   schemas:
     EmailInfo:
@@ -37,8 +42,13 @@ components:
         realm:
           type: string
         creationDate:
-          type: int
+          type: integer
+          format: int64
           description: creation date in seconds since epoch
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
 security:
   - openId:
     - todo

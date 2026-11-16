@@ -1330,6 +1330,9 @@ func ConvertToAPIUserChecks(checks []accreditationsclient.CheckRepresentation) [
 
 // Validate is a validator for UpdatableThemeConfiguration
 func (themeConf UpdatableThemeConfiguration) Validate() error {
+	if themeConf.Settings == nil {
+		return errorhandler.CreateMissingParameterError(constants.Settings)
+	}
 
 	var logoLen *int
 	if themeConf.Logo != nil {

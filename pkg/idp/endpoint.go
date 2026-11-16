@@ -72,7 +72,7 @@ func MakeCreateIdentityProviderEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return component.CreateIdentityProvider(ctx, m[prmRealm], idp), nil
+		return nil, component.CreateIdentityProvider(ctx, m[prmRealm], idp)
 	}
 }
 
