@@ -1057,16 +1057,34 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, adminConfig.AutoIdentificationAllowedRoles, resConfig.AutoIdentificationAllowedRoles)
 	})
 
+	t.Run("Get configuration with invalid override", func(t *testing.T) {
+		var overrideRealm = "customerRealm"
+
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
+		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, overrideRealm).
+			Return([]configuration.RealmContextKey{{IdentitiesRealm: "anotherRealm"}}, nil)
+
+		resConfig, err := component.GetConfiguration(ctx, overrideRealm)
+
+		assert.Nil(t, err)
+		assert.Equal(t, *config.RedirectSuccessfulRegistrationURL, *resConfig.RedirectSuccessfulRegistrationURL)
+		assert.Equal(t, *config.BarcodeType, *resConfig.BarcodeType)
+	})
+
 	t.Run("Get configuration with override realm with succces", func(t *testing.T) {
 		var overrideRealm = "customerRealm"
 		var successURL = "https://success.io"
 
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
+		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, overrideRealm).
+			Return([]configuration.RealmContextKey{{IdentitiesRealm: currentRealm, CustomerRealm: overrideRealm}}, nil)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, overrideRealm).Return(configuration.RealmConfiguration{
 			RedirectSuccessfulRegistrationURL: &successURL,
 		}, nil)
-		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
 
 		resConfig, err := component.GetConfiguration(ctx, overrideRealm)
 
