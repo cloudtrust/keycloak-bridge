@@ -192,11 +192,15 @@ func (r *SMSRepresentation) SMSToJSON() string {
 
 // Validate checks the validity of the given email
 func (r *EmailRepresentation) Validate(recipientRequired bool) error {
+	var theming = r.Theming
+	if theming == nil {
+		theming = &EmailThemingRepresentation{}
+	}
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(prmEmailRecipient, r.Recipient, constants.RegExpEmail, recipientRequired).
 		ValidateParameterNotNil(prmEmailTheming, r.Theming).
-		ValidateParameterRegExp(prmEmailThemingSubjectKey, r.Theming.SubjectKey, regExpThemingSubjectKey, true).
-		ValidateParameterRegExp(prmEmailThemingLocale, r.Theming.Locale, constants.RegExpLocale, false).
+		ValidateParameterRegExp(prmEmailThemingSubjectKey, theming.SubjectKey, regExpThemingSubjectKey, true).
+		ValidateParameterRegExp(prmEmailThemingLocale, theming.Locale, constants.RegExpLocale, false).
 		Status()
 }
 
