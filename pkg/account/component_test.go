@@ -1075,6 +1075,7 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
 		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, nil)
 		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, overrideRealm).
 			Return([]configuration.RealmContextKey{{IdentitiesRealm: "anotherRealm"}}, nil)
 
@@ -1092,13 +1093,12 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
 		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{Attributes: &attributes}, nil)
 		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, overrideRealm).
 			Return([]configuration.RealmContextKey{{IdentitiesRealm: currentRealm, CustomerRealm: overrideRealm}}, nil)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, overrideRealm).Return(configuration.RealmConfiguration{
 			RedirectSuccessfulRegistrationURL: &successURL,
 		}, nil)
-		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{Attributes: &attributes}, nil)
 
 		resConfig, err := component.GetConfiguration(ctx, overrideRealm)
 
