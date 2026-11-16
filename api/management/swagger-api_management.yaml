@@ -2600,6 +2600,11 @@ components:
           type: boolean
         identification_url:
           type: string
+        sponsor_identification_urls:
+          type: object
+          description: identification URL to use for each sponsor realm (key is the sponsor realm name, value is the URL)
+          additionalProperties:
+            type: string
     AdminConfiguration:
       type: object
       required:

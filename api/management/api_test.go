@@ -606,6 +606,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.Len(t, res.AllowedBackURLs, 0)
 		assert.False(t, *res.OnboardingUserEditingEnabled)
 		assert.Nil(t, res.IdentificationURL)
+		assert.Len(t, res.SponsorIdentificationURLs, 0)
 	})
 	t.Run("Non empty struct", func(t *testing.T) {
 		var bTrue = true
@@ -623,6 +624,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 			AllowedBackURL:                    new("back-url"),
 			OnboardingUserEditingEnabled:      &bTrue,
 			IdentificationURL:                 new("identification-url"),
+			SponsorIdentificationURLs:         map[string]string{"sponsor1": "url1"},
 		}
 		var res = ConvertRealmCustomConfigurationFromDBStruct(config)
 		assert.Equal(t, config.DefaultClientID, res.DefaultClientID)
@@ -637,6 +639,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.Equal(t, *config.AllowedBackURL, res.AllowedBackURLs[0])
 		assert.True(t, *res.OnboardingUserEditingEnabled)
 		assert.Equal(t, config.IdentificationURL, res.IdentificationURL)
+		assert.Equal(t, config.SponsorIdentificationURLs, res.SponsorIdentificationURLs)
 	})
 }
 
@@ -963,7 +966,7 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 	})
 
 	var configs []RealmCustomConfiguration
-	for range 8 {
+	for range 10 {
 		configs = append(configs, createValidRealmCustomConfiguration())
 	}
 
@@ -975,6 +978,8 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 	configs[5].SelfServiceDefaultTab = new("abc-def-")              // No final dash
 	configs[6].SelfServiceDefaultTab = new("abcdefghijabcdefghijx") // Too long
 	configs[7].AllowedBackURLs = []string{"ht//tp://company.com"}
+	configs[8].SponsorIdentificationURLs = map[string]string{"ctx$invalid": "https://www.perdu.com"}
+	configs[9].SponsorIdentificationURLs = map[string]string{"ctxone": "ht//tp://company.com"}
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -1164,9 +1169,10 @@ func createValidRealmCustomConfiguration() RealmCustomConfiguration {
 	AllowedBackURLs := []string{"*"}
 
 	return RealmCustomConfiguration{
-		DefaultClientID:    &defaultClientID,
-		DefaultRedirectURI: &defaultRedirectURI,
-		AllowedBackURLs:    AllowedBackURLs,
+		DefaultClientID:           &defaultClientID,
+		DefaultRedirectURI:        &defaultRedirectURI,
+		AllowedBackURLs:           AllowedBackURLs,
+		SponsorIdentificationURLs: map[string]string{"ctxone": "https://www.perdu.com", "ctx-two": "https://www.trustid.ch"},
 	}
 }
 
