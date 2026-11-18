@@ -450,6 +450,12 @@ components:
           type: string
         bo_external_idp_management_enabled:
           type: boolean
+        accreditation_renewal_window_days:
+          type: integer
+        authenticator_expiration_years:
+          type: integer
+        authenticator_renewal_window_days:
+          type: integer
     LinkedAccount:
       type: object
       properties:

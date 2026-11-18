@@ -159,6 +159,9 @@ type Configuration struct {
 	AllowInitialPasswordDefinition           *bool           `json:"allow_initial_password_definition"`
 	IdentificationURL                        *string         `json:"identification_url"`
 	BOExternalIDPManagementEnabled           *bool           `json:"bo_external_idp_management_enabled"`
+	AccreditationRenewalWindowDays           *int            `json:"accreditation_renewal_window_days"`
+	AuthenticatorExpirationYears             *int            `json:"authenticator_expiration_years"`
+	AuthenticatorRenewalWindowDays           *int            `json:"authenticator_renewal_window_days"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method

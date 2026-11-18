@@ -576,6 +576,9 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		AllowInitialPasswordDefinition:           config.APISelfInitialPasswordDefinitionAllowed,
 		IdentificationURL:                        identificationURL,
 		BOExternalIDPManagementEnabled:           adminConfig.BOExternalIDPManagementEnabled,
+		AccreditationRenewalWindowDays:           adminConfig.AccreditationRenewalWindowDays,
+		AuthenticatorExpirationYears:             adminConfig.AuthenticatorExpirationYears,
+		AuthenticatorRenewalWindowDays:           adminConfig.AuthenticatorRenewalWindowDays,
 	}
 
 	isValid, err := c.isValidOverride(ctx, currentRealm, realmIDOverride)

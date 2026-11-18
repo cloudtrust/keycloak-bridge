@@ -1026,6 +1026,9 @@ func TestGetConfiguration(t *testing.T) {
 		VideoIdentificationAllowedRoles:          []string{"video-role"},
 		AuxiliaryVideoIdentificationAllowedRoles: []string{"auxiliary-role"},
 		AutoIdentificationAllowedRoles:           []string{"auto-role"},
+		AccreditationRenewalWindowDays:           new(30),
+		AuthenticatorExpirationYears:             new(3),
+		AuthenticatorRenewalWindowDays:           new(60),
 	}
 	var supportedLocales = []string{"fr", "en", "es"}
 	var realmConfig = kc.RealmRepresentation{InternationalizationEnabled: &trueBool, SupportedLocales: &supportedLocales}
@@ -1067,6 +1070,9 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, adminConfig.VideoIdentificationAllowedRoles, resConfig.VideoIdentificationAllowedRoles)
 		assert.Equal(t, adminConfig.AuxiliaryVideoIdentificationAllowedRoles, resConfig.AuxiliaryVideoIdentificationAllowedRoles)
 		assert.Equal(t, adminConfig.AutoIdentificationAllowedRoles, resConfig.AutoIdentificationAllowedRoles)
+		assert.Equal(t, *adminConfig.AccreditationRenewalWindowDays, *resConfig.AccreditationRenewalWindowDays)
+		assert.Equal(t, *adminConfig.AuthenticatorExpirationYears, *resConfig.AuthenticatorExpirationYears)
+		assert.Equal(t, *adminConfig.AuthenticatorRenewalWindowDays, *resConfig.AuthenticatorRenewalWindowDays)
 	})
 
 	t.Run("Get configuration with invalid override", func(t *testing.T) {
@@ -1124,6 +1130,9 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, adminConfig.AuxiliaryVideoIdentificationAllowedRoles, resConfig.AuxiliaryVideoIdentificationAllowedRoles)
 		assert.Equal(t, adminConfig.AutoIdentificationAllowedRoles, resConfig.AutoIdentificationAllowedRoles)
 		assert.Equal(t, "url2", *resConfig.IdentificationURL)
+		assert.Equal(t, *adminConfig.AccreditationRenewalWindowDays, *resConfig.AccreditationRenewalWindowDays)
+		assert.Equal(t, *adminConfig.AuthenticatorExpirationYears, *resConfig.AuthenticatorExpirationYears)
+		assert.Equal(t, *adminConfig.AuthenticatorRenewalWindowDays, *resConfig.AuthenticatorRenewalWindowDays)
 	})
 
 	t.Run("Error on GetConfiguration", func(t *testing.T) {

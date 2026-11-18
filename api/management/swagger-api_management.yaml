@@ -2627,6 +2627,10 @@ components:
           type: boolean
         accreditation_renewal_window_days:
           type: integer
+        authenticator_expiration_years:
+          type: integer
+        authenticator_renewal_window_days:
+          type: integer
         bo_theme:
           type: string
         sse_theme:
