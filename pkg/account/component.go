@@ -555,6 +555,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		ShowPasswordTab:                          config.ShowPasswordTab,
 		ShowProfileTab:                           config.ShowProfileTab,
 		ShowIDPLinksTab:                          config.ShowIDPLinksTab,
+		PasskeysEnabled:                          config.PasskeysEnabled,
 		SelfServiceDefaultTab:                    config.SelfServiceDefaultTab,
 		RedirectSuccessfulRegistrationURL:        config.RedirectSuccessfulRegistrationURL,
 		BarcodeType:                              config.BarcodeType,

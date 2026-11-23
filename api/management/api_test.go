@@ -603,6 +603,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.False(t, *res.ShowProfileTab)
 		assert.False(t, *res.ShowAccountDeletionButton)
 		assert.False(t, *res.ShowIDPLinksTab)
+		assert.False(t, *res.PasskeysEnabled)
 		assert.Nil(t, res.SelfServiceDefaultTab)
 		assert.Nil(t, res.RedirectCancelledRegistrationURL)
 		assert.Nil(t, res.RedirectSuccessfulRegistrationURL)

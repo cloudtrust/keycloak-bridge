@@ -1006,6 +1006,7 @@ func TestGetConfiguration(t *testing.T) {
 		ShowPasswordTab:                         &trueBool,
 		ShowProfileTab:                          &trueBool,
 		ShowIDPLinksTab:                         &trueBool,
+		PasskeysEnabled:                         &trueBool,
 		SelfServiceDefaultTab:                   new("default-tab"),
 		RedirectSuccessfulRegistrationURL:       new("successful-url"),
 		BarcodeType:                             new("barcode"),
@@ -1051,6 +1052,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowIDPLinksTab, *resConfig.ShowIDPLinksTab)
+		assert.Equal(t, *config.PasskeysEnabled, *resConfig.PasskeysEnabled)
 		assert.Equal(t, *config.SelfServiceDefaultTab, *resConfig.SelfServiceDefaultTab)
 		assert.Equal(t, *config.RedirectSuccessfulRegistrationURL, *resConfig.RedirectSuccessfulRegistrationURL)
 		assert.Equal(t, *config.BarcodeType, *resConfig.BarcodeType)
@@ -1109,6 +1111,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, *config.ShowIDPLinksTab, *resConfig.ShowIDPLinksTab)
+		assert.Equal(t, *config.PasskeysEnabled, *resConfig.PasskeysEnabled)
 		assert.Equal(t, successURL, *resConfig.RedirectSuccessfulRegistrationURL)
 		assert.Equal(t, *config.SelfServiceDefaultTab, *resConfig.SelfServiceDefaultTab)
 		assert.Equal(t, adminConfig.AvailableChecks, resConfig.AvailableChecks)
