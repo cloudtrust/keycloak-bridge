@@ -138,6 +138,7 @@ type Configuration struct {
 	ShowProfileTab                           *bool           `json:"show_profile_tab"`
 	ShowAccountDeletionButton                *bool           `json:"show_account_deletion_button"`
 	ShowIDPLinksTab                          *bool           `json:"show_idplinks_tab"`
+	PasskeysEnabled                          *bool           `json:"passkeys_enabled"`
 	SelfServiceDefaultTab                    *string         `json:"self_service_default_tab"`
 	RedirectSuccessfulRegistrationURL        *string         `json:"redirect_successful_registration_url"`
 	AvailableChecks                          map[string]bool `json:"available-checks"`

@@ -256,6 +256,7 @@ type RealmCustomConfiguration struct {
 	ShowProfileTab                          *bool             `json:"show_profile_tab"`
 	ShowAccountDeletionButton               *bool             `json:"show_account_deletion_button"`
 	ShowIDPLinksTab                         *bool             `json:"show_idplinks_tab"`
+	PasskeysEnabled                         *bool             `json:"passkeys_enabled"`
 	SelfServiceDefaultTab                   *string           `json:"self_service_default_tab"`
 	RedirectCancelledRegistrationURL        *string           `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL       *string           `json:"redirect_successful_registration_url"`
@@ -872,6 +873,7 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		ShowProfileTab:                          defaultBool(config.ShowProfileTab, false),
 		ShowAccountDeletionButton:               defaultBool(config.ShowAccountDeletionButton, false),
 		ShowIDPLinksTab:                         defaultBool(config.ShowIDPLinksTab, false),
+		PasskeysEnabled:                         defaultBool(config.PasskeysEnabled, false),
 		SelfServiceDefaultTab:                   config.SelfServiceDefaultTab,
 		RedirectCancelledRegistrationURL:        config.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:       config.RedirectSuccessfulRegistrationURL,
