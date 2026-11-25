@@ -39,10 +39,10 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/idp"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/misc"
 	mobile "github.com/cloudtrust/keycloak-bridge/pkg/mobile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
-	"github.com/cloudtrust/keycloak-bridge/pkg/support"
 	"github.com/cloudtrust/keycloak-bridge/pkg/tasks"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation"
 	keycloak "github.com/cloudtrust/keycloak-client/v2"
@@ -86,7 +86,7 @@ const (
 	RateKeyMonitoring       = iota
 	RateKeyRegister         = iota
 	RateKeyStatistics       = iota
-	RateKeySupport          = iota
+	RateKeyMisc             = iota
 	RateKeyTasks            = iota
 	RateKeyValidation       = iota
 	RateKeyIDP              = iota
@@ -246,7 +246,7 @@ func main() {
 			RateKeyManagementStatus: c.GetInt(cfgRateKeyManagementStatus),
 			RateKeyStatistics:       c.GetInt(cfgRateKeyStatistics),
 			RateKeyRegister:         c.GetInt(cfgRateKeyRegister),
-			RateKeySupport:          c.GetInt(cfgRateKeySupport),
+			RateKeyMisc:             c.GetInt(cfgRateKeySupport),
 			RateKeyTasks:            c.GetInt(cfgRateKeyTasks),
 			RateKeyKYC:              c.GetInt(cfgRateKeyKYC),
 			RateKeyIDP:              c.GetInt(cfgRateKeyIDP),
@@ -642,17 +642,14 @@ func main() {
 		}
 	}
 
-	// Support service.
-	var supportEndpoints support.Endpoints
+	// Misc. service.
+	var miscEndpoints misc.Endpoints
 	{
-		var supportLogger = log.With(logger, "svc", "support")
-
-		supportComponent := support.NewComponent(keycloakClient, supportLogger)
-
-		var rateLimitSupport = rateLimit[RateKeySupport]
-		supportEndpoints = support.Endpoints{
-			GetSupportInformation: prepareEndpoint(support.MakeGetSupportInformationEndpoint(supportComponent), "get_email_information", supportLogger, rateLimitSupport),
-		}
+		var miscLogger = log.With(logger, "svc", "misc")
+		miscComponent := misc.NewComponent(keycloakClient, miscLogger)
+		miscEndpoints = misc.NewEndpoints(miscComponent, func(endpoint cs.Endpoint, name string) endpoint.Endpoint {
+			return prepareEndpoint(endpoint, name, miscLogger, rateLimit[RateKeyMisc])
+		})
 	}
 
 	// Statistics service.
@@ -1045,10 +1042,16 @@ func main() {
 		communicationsSubroute.Path("/realms/{realm}/users/{userID}/send-email").Methods("POST").Handler(sendMailToUserHandler)
 		communicationsSubroute.Path("/realms/{realm}/send-sms").Methods("POST").Handler(sendSMSHandler)
 
-		// Support (bearer auth)
-		var getSupportInfosHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, support.MakeSupportHandler, logger)(supportEndpoints.GetSupportInformation)
+		// Misc (support, circuit breaker) (bearer auth)
+		var getSupportInfosHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, misc.MakeSupportHandler, logger)(miscEndpoints.GetSupportInformation)
+		var getCircuitBreakerStatusHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, misc.MakeSupportHandler, logger)(miscEndpoints.GetCircuitBreakerStatus)
+		var openCircuitBreakerHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, misc.MakeSupportHandler, logger)(miscEndpoints.OpenCircuitBreaker)
+		var closeCircuitBreakerHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, misc.MakeSupportHandler, logger)(miscEndpoints.CloseCircuitBreaker)
 
 		route.PathPrefix("/support/accounts").Methods("GET").Handler(getSupportInfosHandler)
+		route.Path("/misc/realms/{realm}/circuit-breaker").Methods("GET").Handler(getCircuitBreakerStatusHandler)
+		route.Path("/misc/realms/{realm}/circuit-breaker/open").Methods("POST").Handler(openCircuitBreakerHandler)
+		route.Path("/misc/realms/{realm}/circuit-breaker/close").Methods("POST").Handler(closeCircuitBreakerHandler)
 
 		// Tasks (bearer auth)
 		var deniedToUUsersHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tasks.MakeTasksHandler, logger)(tasksEndpoints.DeleteDeniedToUUsers)

@@ -1,4 +1,4 @@
-package support
+package misc
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	prmRealm    = "realm"
 	prmQryEmail = "email"
 )
 
@@ -27,7 +28,7 @@ func MakeSupportHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 
 // decodeSupportRequest gets the HTTP parameters and body content
 func decodeSupportRequest(ctx context.Context, req *http.Request) (any, error) {
-	var pathParams = map[string]string{}
+	var pathParams = map[string]string{prmRealm: constants.RegExpRealmName}
 	var queryParams = map[string]string{prmQryEmail: constants.RegExpEmail}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

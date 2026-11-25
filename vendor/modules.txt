@@ -31,7 +31,7 @@ github.com/cloudtrust/httpclient
 ## explicit; go 1.27.1
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
-# github.com/cloudtrust/keycloak-client/v2 v2.21.0
+# github.com/cloudtrust/keycloak-client/v2 v2.21.1-0.20261125223050-a0f7aa389f9d
 ## explicit; go 1.27.1
 github.com/cloudtrust/keycloak-client/v2
 github.com/cloudtrust/keycloak-client/v2/api

@@ -1,0 +1,119 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust miscellaneous
+  description: 'Miscellaneous API for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888
+tags:
+- name: Support
+  description: Support helpers
+- name: CircuitBreaker
+  description: Circuit breaker management
+paths:
+  /support/accounts:
+    get:
+      tags:
+      - Support
+      summary: Get account information according to a given email
+      parameters:
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation (the body is null instead of [] when the list is empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                nullable: true
+                items:
+                  $ref: '#/components/schemas/EmailInfo'
+        400:
+          description: missing or invalid email parameter
+        404:
+          description: no account found for this email
+  /misc/realms/{realm}/circuit-breaker:
+    get:
+      tags:
+      - CircuitBreaker
+      summary: Get the circuit breaker status of a realm
+      parameters:
+      - $ref: '#/components/parameters/Realm'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitBreakerStatus'
+        403:
+          description: insufficient permissions
+  /misc/realms/{realm}/circuit-breaker/open:
+    post:
+      tags:
+      - CircuitBreaker
+      summary: Open the circuit breaker of a realm
+      parameters:
+      - $ref: '#/components/parameters/Realm'
+      responses:
+        204:
+          description: circuit breaker successfully opened
+        403:
+          description: insufficient permissions
+  /misc/realms/{realm}/circuit-breaker/close:
+    post:
+      tags:
+      - CircuitBreaker
+      summary: Close the circuit breaker of a realm
+      parameters:
+      - $ref: '#/components/parameters/Realm'
+      responses:
+        204:
+          description: circuit breaker successfully closed
+        403:
+          description: insufficient permissions
+components:
+  parameters:
+    Realm:
+      name: realm
+      in: path
+      required: true
+      description: name of the realm
+      schema:
+        type: string
+  schemas:
+    CircuitBreakerStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          description: current status of the circuit breaker
+        trigger:
+          type: string
+          description: what triggered the last status change
+        since:
+          type: string
+          description: date of the last status change
+        updatedBy:
+          type: string
+          description: who performed the last status change
+    EmailInfo:
+      type: object
+      properties:
+        realm:
+          type: string
+        creationDate:
+          type: integer
+          format: int64
+          description: creation date in seconds since epoch
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo

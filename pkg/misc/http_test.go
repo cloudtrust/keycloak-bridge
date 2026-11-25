@@ -1,4 +1,4 @@
-package support
+package misc
 
 import (
 	"bytes"
