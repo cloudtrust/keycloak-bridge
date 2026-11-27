@@ -157,6 +157,20 @@ func (mr *KeycloakAccountClientMockRecorder) GetLinkedAccounts(accessToken, real
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLinkedAccounts", reflect.TypeOf((*KeycloakAccountClient)(nil).GetLinkedAccounts), accessToken, realmName)
 }
 
+// LogoutOtherSessions mocks base method.
+func (m *KeycloakAccountClient) LogoutOtherSessions(accessToken, realmName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LogoutOtherSessions", accessToken, realmName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LogoutOtherSessions indicates an expected call of LogoutOtherSessions.
+func (mr *KeycloakAccountClientMockRecorder) LogoutOtherSessions(accessToken, realmName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutOtherSessions", reflect.TypeOf((*KeycloakAccountClient)(nil).LogoutOtherSessions), accessToken, realmName)
+}
+
 // MoveAfter mocks base method.
 func (m *KeycloakAccountClient) MoveAfter(accessToken, realmName, credentialID, previousCredentialID string) error {
 	m.ctrl.T.Helper()
@@ -299,18 +313,4 @@ func (mr *KeycloakTechnicalClientMockRecorder) GetUsers(ctx, targetRealmName any
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, targetRealmName}, paramKV...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*KeycloakTechnicalClient)(nil).GetUsers), varargs...)
-}
-
-// LogoutAllSessions mocks base method.
-func (m *KeycloakTechnicalClient) LogoutAllSessions(ctx context.Context, realmName, userID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LogoutAllSessions", ctx, realmName, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LogoutAllSessions indicates an expected call of LogoutAllSessions.
-func (mr *KeycloakTechnicalClientMockRecorder) LogoutAllSessions(ctx, realmName, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutAllSessions", reflect.TypeOf((*KeycloakTechnicalClient)(nil).LogoutAllSessions), ctx, realmName, userID)
 }
