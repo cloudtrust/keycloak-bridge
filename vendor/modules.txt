@@ -67,9 +67,10 @@ github.com/go-kit/log/level
 # github.com/go-logfmt/logfmt v0.6.1
 ## explicit; go 1.21
 github.com/go-logfmt/logfmt
-# github.com/go-sql-driver/mysql v1.10.2
-## explicit; go 1.24.0
+# github.com/go-sql-driver/mysql v1.11.0
+## explicit; go 1.25.0
 github.com/go-sql-driver/mysql
+github.com/go-sql-driver/mysql/internal/compression
 # github.com/go-viper/mapstructure/v2 v2.5.0
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
