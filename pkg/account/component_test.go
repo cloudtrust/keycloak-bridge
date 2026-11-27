@@ -108,7 +108,7 @@ func TestUpdatePassword(t *testing.T) {
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(anError)
+		mocks.keycloakAccountClient.EXPECT().LogoutOtherSessions(accessToken, realm).Return(anError)
 
 		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
 
@@ -146,7 +146,7 @@ func TestUpdatePassword(t *testing.T) {
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(nil)
+		mocks.keycloakAccountClient.EXPECT().LogoutOtherSessions(accessToken, realm).Return(nil)
 
 		err := component.UpdatePassword(ctx, "", newPasswd, newPasswd)
 		assert.Nil(t, err)
@@ -187,7 +187,7 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(errors.New(""))
-		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID)
+		mocks.keycloakAccountClient.EXPECT().LogoutOtherSessions(accessToken, realm)
 
 		assert.Nil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
 	})

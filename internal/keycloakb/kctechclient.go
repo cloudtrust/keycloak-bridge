@@ -11,14 +11,12 @@ import (
 type KeycloakTechnicalClient interface {
 	GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error)
 	GetUsers(ctx context.Context, realmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
-	LogoutAllSessions(ctx context.Context, realmName, userID string) error
 }
 
 // KeycloakForTechnicalClient interface
 type KeycloakForTechnicalClient interface {
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
-	LogoutAllSessions(accessToken string, realmName, userID string) error
 }
 
 type kcTechnicalClient struct {
@@ -56,14 +54,4 @@ func (tc *kcTechnicalClient) GetUsers(ctx context.Context, targetRealmName strin
 	}
 
 	return tc.kcClient.GetUsers(accessToken, tc.tokenRealm, targetRealmName, paramKV...)
-}
-
-func (tc *kcTechnicalClient) LogoutAllSessions(ctx context.Context, realmName string, userID string) error {
-	var accessToken, err = tc.tokenProvider.ProvideTokenForRealm(ctx, realmName)
-	if err != nil {
-		tc.logger.Error(ctx, "msg", "Can't get access token", "err", err.Error())
-		return err
-	}
-
-	return tc.kcClient.LogoutAllSessions(accessToken, realmName, userID)
 }

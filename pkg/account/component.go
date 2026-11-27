@@ -54,13 +54,13 @@ type KeycloakAccountClient interface {
 	SendEmail(accessToken, realmName, template, subject string, recipient *string, attributes map[string]string) error
 	GetLinkedAccounts(accessToken string, realmName string) ([]kc.LinkedAccountRepresentation, error)
 	DeleteLinkedAccount(accessToken string, realmName string, providerAlias string) error
+	LogoutOtherSessions(accessToken string, realmName string) error
 }
 
 // KeycloakTechnicalClient interface exposes methods called by a technical account
 type KeycloakTechnicalClient interface {
 	GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error)
 	GetUsers(ctx context.Context, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
-	LogoutAllSessions(ctx context.Context, realmName string, userID string) error
 }
 
 // Component interface exposes methods used by the bridge API
@@ -176,8 +176,9 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	// Store the API call into the DB
 	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "PASSWORD_RESET", realm, userID, username, nil))
 
-	if err := c.keycloakTechClient.LogoutAllSessions(ctx, realm, userID); err != nil {
-		c.logger.Warn(ctx, "msg", "User updated his/her password but logout of sessions failed", "err", err.Error(), "realm", realm, "user", userID)
+	// Log out all the other sessions of the user but keep the current one
+	if err := c.keycloakAccountClient.LogoutOtherSessions(accessToken, realm); err != nil {
+		c.logger.Warn(ctx, "msg", "User updated his/her password but logout of other sessions failed", "err", err.Error(), "realm", realm, "user", userID)
 	}
 
 	return nil

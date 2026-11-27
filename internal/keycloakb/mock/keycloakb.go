@@ -605,20 +605,6 @@ func (mr *KeycloakForTechnicalClientMockRecorder) GetUsers(accessToken, reqRealm
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*KeycloakForTechnicalClient)(nil).GetUsers), varargs...)
 }
 
-// LogoutAllSessions mocks base method.
-func (m *KeycloakForTechnicalClient) LogoutAllSessions(accessToken, realmName, userID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LogoutAllSessions", accessToken, realmName, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LogoutAllSessions indicates an expected call of LogoutAllSessions.
-func (mr *KeycloakForTechnicalClientMockRecorder) LogoutAllSessions(accessToken, realmName, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutAllSessions", reflect.TypeOf((*KeycloakForTechnicalClient)(nil).LogoutAllSessions), accessToken, realmName, userID)
-}
-
 // Logger is a mock of Logger interface.
 type Logger struct {
 	ctrl     *gomock.Controller

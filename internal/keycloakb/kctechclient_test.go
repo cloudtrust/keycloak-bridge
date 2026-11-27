@@ -85,32 +85,3 @@ func TestGetUsers(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
-
-func TestLogoutAllSessions(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mocks = createKcTechnicalClientMocks(mockCtrl)
-	var kcTechClient = createKcTechnicalClient(mocks)
-
-	var accessToken = "access-token"
-	var anyError = errors.New("any error")
-	var userID = "user-id"
-	var ctx = context.TODO()
-
-	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
-
-	t.Run("Token provider fails", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", anyError)
-
-		var err = kcTechClient.LogoutAllSessions(ctx, realm, userID)
-		assert.Equal(t, anyError, err)
-	})
-	t.Run("Success", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil)
-		mocks.kcClient.EXPECT().LogoutAllSessions(accessToken, realm, userID).Return(nil)
-
-		var err = kcTechClient.LogoutAllSessions(ctx, realm, userID)
-		assert.Nil(t, err)
-	})
-}

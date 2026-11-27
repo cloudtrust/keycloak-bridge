@@ -6,7 +6,7 @@ require (
 	github.com/cloudtrust/common-service/v2 v2.23.0
 	github.com/cloudtrust/httpclient v1.7.0
 	github.com/cloudtrust/kafka-client v1.12.1
-	github.com/cloudtrust/keycloak-client/v2 v2.21.0
+	github.com/cloudtrust/keycloak-client/v2 v2.21.1-0.20261127115708-4ac40c9d6e0e
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-sql-driver/mysql v1.10.2
